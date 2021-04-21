@@ -3,18 +3,18 @@ import Foundation
 public struct Request<Output> {
     public let requestFactory: RequestBuildable
     public let requestModifiers: [RequestModifier]
-    public let responseModifiers: [ResponseModifier]
+    public let dataModifiers: [DataModifier]
 
     private let dataConverter: (Data) throws -> Output
 
     public init(requestFactory: RequestBuildable,
                 requestModifiers: [RequestModifier] = [],
-                responseModifiers: [ResponseModifier] = [],
+                dataModifiers: [DataModifier] = [],
                 dataConverter: @escaping (Data) throws -> Output)
     {
         self.requestFactory = requestFactory
         self.requestModifiers = requestModifiers
-        self.responseModifiers = responseModifiers
+        self.dataModifiers = dataModifiers
         self.dataConverter = dataConverter
     }
 }
@@ -50,7 +50,7 @@ extension Request: ResponseConvertible {
     }
 
     private func modifyResponse(data: Data) -> Result<Data, Error> {
-        for modifier in responseModifiers {
+        for modifier in dataModifiers {
             return modifier.modify(data)
         }
         // Return the original data when `responseModifiers` is empty.
