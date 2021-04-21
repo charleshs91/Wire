@@ -10,3 +10,5 @@ enum LocalError: LocalizedError {
         }
     }
 }
+
+extension LocalError: Equatable {}
