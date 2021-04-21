@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Resource: RequestConvertible {
+public struct Resource: RequestBuildable {
     public let url: URL
     public let headers: [HTTP.Header]
     public let method: HTTP.Method

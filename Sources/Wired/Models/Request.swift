@@ -1,14 +1,27 @@
 import Foundation
 
-public protocol Request: RequestConvertible {
-    var urlRequestBuilder: RequestConvertible { get }
-    var requestModifiers: [RequestModifier] { get }
-    var responseModifiers: [ResponseModifier] { get }
+public struct Request<Output> {
+    public let requestFactory: RequestBuildable
+    public let requestModifiers: [RequestModifier]
+    public let responseModifiers: [ResponseModifier]
+
+    private let dataConverter: (Data) throws -> Output
+
+    public init(requestFactory: RequestBuildable,
+                requestModifiers: [RequestModifier] = [],
+                responseModifiers: [ResponseModifier] = [],
+                dataConverter: @escaping (Data) throws -> Output)
+    {
+        self.requestFactory = requestFactory
+        self.requestModifiers = requestModifiers
+        self.responseModifiers = responseModifiers
+        self.dataConverter = dataConverter
+    }
 }
 
-extension Request {
+extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
-        switch urlRequestBuilder.buildRequest() {
+        switch requestFactory.buildRequest() {
         case .success(let urlRequest):
             for modifier in requestModifiers {
                 return modifier.modify(urlRequest)
@@ -19,8 +32,24 @@ extension Request {
             return .failure(error)
         }
     }
+}
 
-    public func convertResponse(data: Data) -> Result<Data, Error> {
+extension Request: ResponseConvertible {
+    public func convert(data: Data) -> Result<Output, Error> {
+        switch modifyResponse(data: data) {
+        case .failure(let error):
+            return .failure(error)
+        case .success(let data):
+            do {
+                let output = try dataConverter(data)
+                return .success(output)
+            } catch {
+                return .failure(error)
+            }
+        }
+    }
+
+    private func modifyResponse(data: Data) -> Result<Data, Error> {
         for modifier in responseModifiers {
             return modifier.modify(data)
         }
