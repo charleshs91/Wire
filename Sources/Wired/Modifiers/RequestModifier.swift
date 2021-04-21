@@ -5,15 +5,21 @@ public protocol RequestModifier {
 }
 
 public struct AnyRequestModifier: RequestModifier {
-    private let _modify: (URLRequest) -> Result<URLRequest, Error>
+    public typealias Modifier = (URLRequest) -> Result<URLRequest, Error>
+
+    private let modifier: Modifier
+
+    public init(closure: @escaping Modifier) {
+        modifier = closure
+    }
 
     public init<T: RequestModifier>(_ modifier: T) {
-        _modify = { urlRequest in
+        self.modifier = { urlRequest in
             return modifier.modify(urlRequest)
         }
     }
 
     public func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
-        return _modify(request)
+        return modifier(request)
     }
 }

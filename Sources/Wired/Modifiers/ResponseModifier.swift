@@ -5,15 +5,21 @@ public protocol ResponseModifier {
 }
 
 public struct AnyResponseModifier: ResponseModifier {
-    private let _modify: (Data) -> Result<Data, Error>
+    public typealias Modifier = (Data) -> Result<Data, Error>
+
+    private let modifier: Modifier
+
+    public init(closure: @escaping Modifier) {
+        modifier = closure
+    }
 
     public init<T: ResponseModifier>(_ modifier: T) {
-        _modify = { inputData in
+        self.modifier = { inputData in
             return modifier.modify(inputData)
         }
     }
 
     public func modify(_ inputData: Data) -> Result<Data, Error> {
-        return _modify(inputData)
+        return modifier(inputData)
     }
 }
