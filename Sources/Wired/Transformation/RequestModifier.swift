@@ -1,5 +1,6 @@
 import Foundation
 
+/// Concrete implementation of `RequestModifiable`.
 public struct RequestModifier: RequestModifiable {
     public typealias Modifier = (URLRequest) -> Result<URLRequest, Error>
 

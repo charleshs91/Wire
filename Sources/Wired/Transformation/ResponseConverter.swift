@@ -1,5 +1,6 @@
 import Foundation
 
+/// Concrete implementation of `ResponseConvertible`.
 public struct ResponseConverter<Output>: ResponseConvertible {
     public typealias Converter = (Data) -> Result<Output, Error>
 

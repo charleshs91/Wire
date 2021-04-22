@@ -1,4 +1,4 @@
 import Foundation
 
-/// A collection of literals used in a HTTP request.
+/// A collection of models used in a HTTP request.
 public enum HTTP {}

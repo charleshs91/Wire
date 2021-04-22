@@ -1,5 +1,6 @@
 import Foundation
 
+/// Concrete implementation of `DataModifiable`.
 public struct DataModifier: DataModifiable {
     public typealias Modifier = (Data) -> Result<Data, Error>
 

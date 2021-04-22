@@ -1,6 +1,7 @@
 import Foundation
 
 public protocol RequestBuildable {
+    /// Returns `URLRequest` wrapped by a `Result` value.
     func buildRequest() -> Result<URLRequest, Error>
 }
 

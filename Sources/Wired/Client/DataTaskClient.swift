@@ -3,6 +3,7 @@ import Foundation
 public final class DataTaskClient {
     public typealias Completion<T> = (Result<T, Error>) -> Void
 
+    /// The shared object of `DataTaskClient`.
     public static let shared: DataTaskClient = DataTaskClient(configuration: .default)
 
     private let configuration: URLSessionConfiguration
@@ -13,6 +14,10 @@ public final class DataTaskClient {
         self.configuration = configuration
     }
 
+    /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
+    /// - Parameters:
+    ///   - request: An object that addresses both the generation of `URLRequest` and conversion from `Data` into an `Output` value.
+    ///   - completion: A completion handler.
     @discardableResult
     public func retrieveResponse<T>(request: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
     where T: RequestBuildable & ResponseConvertible
@@ -20,6 +25,11 @@ public final class DataTaskClient {
         return retrieveResponse(request: request, dataConverter: request, completion: completion)
     }
 
+    /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
+    /// - Parameters:
+    ///   - request: An object that addresses the generation of `URLRequest`.
+    ///   - dataConverter: An object that transforms `Data` into an `Output` value.
+    ///   - completion: A completion handler.
     @discardableResult
     public func retrieveResponse<T, U>(request: T, dataConverter: U, completion: @escaping Completion<U.Output>) -> URLSessionDataTask?
     where T: RequestBuildable,
@@ -40,6 +50,10 @@ public final class DataTaskClient {
         }
     }
 
+    /// Retrieves the contents of a request and calls a handler upon completion.
+    /// - Parameters:
+    ///   - request: An object that addresses the generation of `URLRequest`.
+    ///   - completion: A completion handler.
     @discardableResult
     public func retrieveData<T>(request: T, completion: @escaping Completion<Data>) -> URLSessionDataTask?
     where T: RequestBuildable

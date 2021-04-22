@@ -1,15 +1,20 @@
 import Foundation
 
-enum LocalError: LocalizedError {
+public enum LocalError: LocalizedError {
+    /// The URL string is invalid.
     case invalidURLString(String)
-    // client
+    /// Error from `URLSession`.
     case sessionError(Error)
+    /// No response from server
     case noResponse
+    /// The response is not HTTP
     case notHttpResponse
+    /// HTTP response with status code other than 200
     case httpStatus(code: Int)
+    /// The response does not contain data
     case noData
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidURLString(let urlString):
             return "`\(urlString)` is not a valid URL."
@@ -28,7 +33,7 @@ enum LocalError: LocalizedError {
 }
 
 extension LocalError: Equatable {
-    static func ==(lhs: LocalError, rhs: LocalError) -> Bool {
+    public static func ==(lhs: LocalError, rhs: LocalError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidURLString(let leftString), .invalidURLString(let rightString)):
             return leftString == rightString

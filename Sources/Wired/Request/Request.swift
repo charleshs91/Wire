@@ -1,12 +1,19 @@
 import Foundation
 
+/// `Request` defines the handling of a networking request, including the generation and modification
+/// of `URLRequest` and transformation of the retrieved data into an `Output`.
 public struct Request<Output> {
-    public let requestFactory: RequestBuildable
-    public let requestModifiers: [RequestModifiable]
-    public let dataModifiers: [DataModifiable]
-
+    private let requestFactory: RequestBuildable
+    private let requestModifiers: [RequestModifiable]
+    private let dataModifiers: [DataModifiable]
     private let dataConverter: (Data) throws -> Output
 
+    /// Creates a `Request` object.
+    /// - Parameters:
+    ///   - requestFactory: The `URLRequest` generating object.
+    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
+    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
+    ///   - dataConverter: The closure which converts the modified data into an `Output`.
     public init(requestFactory: RequestBuildable,
                 requestModifiers: [RequestModifiable] = [],
                 dataModifiers: [DataModifiable] = [],
