@@ -71,10 +71,10 @@ public final class DataTaskClient {
                     return completion(.failure(LocalError.noResponse))
                 }
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    return completion(.failure(LocalError.notHttpResponse))
+                    return completion(.failure(LocalError.notHttpResponse(response: response)))
                 }
                 guard httpResponse.statusCode == 200 else {
-                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode)))
+                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode, data: data)))
                 }
                 guard let data = data else {
                     return completion(.failure(LocalError.noData))
