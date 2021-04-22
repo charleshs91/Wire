@@ -3,15 +3,17 @@ import Foundation
 public final class DataTaskClient {
     public typealias Completion<T> = (Result<T, LocalError>) -> Void
 
-    /// The shared object of `DataTaskClient`.
-    public static let shared: DataTaskClient = DataTaskClient(configuration: .default)
+    /// The shared object of `DataTaskClient` that uses `URLSession.shared` as its session.
+    public static let shared: DataTaskClient = DataTaskClient()
 
-    private let configuration: URLSessionConfiguration
+    private let session: URLSession
 
-    private lazy var session: URLSession = URLSession(configuration: configuration)
+    public init(session: URLSession = .shared) {
+        self.session = session
+    }
 
-    public init(configuration: URLSessionConfiguration) {
-        self.configuration = configuration
+    public init(configuration: URLSessionConfiguration, delegateQueue: OperationQueue? = nil) {
+        self.session = URLSession(configuration: configuration, delegate: nil, delegateQueue: delegateQueue)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
