@@ -21,10 +21,10 @@ public final class DataTaskClient {
     ///   - request: An object that addresses both the generation of `URLRequest` and conversion from `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveResponse<T>(request: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
+    public func retrieveObject<T>(request: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
     where T: RequestBuildable & ResponseConvertible
     {
-        return retrieveResponse(request: request, dataConverter: request, completion: completion)
+        return retrieveObject(request: request, dataConverter: request, completion: completion)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -33,7 +33,7 @@ public final class DataTaskClient {
     ///   - dataConverter: An object that transforms `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveResponse<T, U>(request: T, dataConverter: U, completion: @escaping Completion<U.Output>) -> URLSessionDataTask?
+    public func retrieveObject<T, U>(request: T, dataConverter: U, completion: @escaping Completion<U.Output>) -> URLSessionDataTask?
     where T: RequestBuildable,
           U: ResponseConvertible
     {

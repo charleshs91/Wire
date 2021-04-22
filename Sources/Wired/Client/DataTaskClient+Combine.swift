@@ -13,21 +13,21 @@ extension DataTaskClient {
         .eraseToAnyPublisher()
     }
 
-    public func responsePublisher<T, U>(request: T, dataConverter: U) -> AnyPublisher<U.Output, LocalError>
+    public func objectPublisher<T, U>(request: T, dataConverter: U) -> AnyPublisher<U.Output, LocalError>
     where T: RequestBuildable,
           U: ResponseConvertible
     {
         return Future { [unowned self] promise in
-            retrieveResponse(request: request, dataConverter: dataConverter, completion: promise)
+            retrieveObject(request: request, dataConverter: dataConverter, completion: promise)
         }
         .eraseToAnyPublisher()
     }
 
-    public func responsePublisher<T>(request: T) -> AnyPublisher<T.Output, LocalError>
+    public func objectPublisher<T>(request: T) -> AnyPublisher<T.Output, LocalError>
     where T: RequestBuildable & ResponseConvertible
     {
         return Future { [unowned self] promise in
-            retrieveResponse(request: request, completion: promise)
+            retrieveObject(request: request, completion: promise)
         }
         .eraseToAnyPublisher()
     }
