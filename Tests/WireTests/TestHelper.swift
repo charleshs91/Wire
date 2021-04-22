@@ -28,3 +28,7 @@ extension String {
         ]
     }
 }
+
+enum TestError: Error {
+    case failure
+}
