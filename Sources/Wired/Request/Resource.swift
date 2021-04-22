@@ -26,3 +26,18 @@ public struct Resource: RequestBuildable {
         return .success(urlRequest)
     }
 }
+
+extension Resource {
+    public func getData(completion: @escaping (Result<Data, Error>) -> Void) {
+        DataTaskClient.shared.retrieveData(request: self, completion: completion)
+    }
+
+    public func getJSON<T:Decodable>(ofType: T.Type,
+                                     using decoder: JSONDecoder = JSONDecoder(),
+                                     completion: @escaping (Result<T, Error>) -> Void)
+    {
+        DataTaskClient.shared.retrieveResponse(request: self,
+                                               dataConverter: JSONConverter<T>(decoder: decoder),
+                                               completion: completion)
+    }
+}

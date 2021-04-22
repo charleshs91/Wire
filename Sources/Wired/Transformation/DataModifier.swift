@@ -1,10 +1,6 @@
 import Foundation
 
-public protocol DataModifier {
-    func modify(_ inputData: Data) -> Result<Data, Error>
-}
-
-public struct AnyResponseModifier: DataModifier {
+public struct DataModifier: DataModifiable {
     public typealias Modifier = (Data) -> Result<Data, Error>
 
     private let modifier: Modifier
@@ -13,7 +9,7 @@ public struct AnyResponseModifier: DataModifier {
         modifier = closure
     }
 
-    public init<T: DataModifier>(_ modifier: T) {
+    public init<T: DataModifiable>(_ modifier: T) {
         self.modifier = { inputData in
             return modifier.modify(inputData)
         }

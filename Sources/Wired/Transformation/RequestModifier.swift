@@ -1,10 +1,6 @@
 import Foundation
 
-public protocol RequestModifier {
-    func modify(_ request: URLRequest) -> Result<URLRequest, Error>
-}
-
-public struct AnyRequestModifier: RequestModifier {
+public struct RequestModifier: RequestModifiable {
     public typealias Modifier = (URLRequest) -> Result<URLRequest, Error>
 
     private let modifier: Modifier
@@ -13,7 +9,7 @@ public struct AnyRequestModifier: RequestModifier {
         modifier = closure
     }
 
-    public init<T: RequestModifier>(_ modifier: T) {
+    public init<T: RequestModifiable>(_ modifier: T) {
         self.modifier = { urlRequest in
             return modifier.modify(urlRequest)
         }
