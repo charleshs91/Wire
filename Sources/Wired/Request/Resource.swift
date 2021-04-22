@@ -30,11 +30,11 @@ public struct Resource: RequestBuildable {
 // MARK: - Methods incorporating DataTaskClient
 
 extension Resource {
-    public func getData(completion: @escaping (Result<Data, Error>) -> Void) {
+    public func getData(completion: @escaping (Result<Data, LocalError>) -> Void) {
         DataTaskClient.shared.retrieveData(request: self, completion: completion)
     }
 
-    public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, Error>) -> Void)
+    public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, LocalError>) -> Void)
     where T: Decodable
     {
         DataTaskClient.shared.retrieveResponse(request: self,
@@ -48,11 +48,11 @@ import Combine
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Resource {
-    public var dataPublisher: AnyPublisher<Data, Error> {
+    public var dataPublisher: AnyPublisher<Data, LocalError> {
         return DataTaskClient.shared.dataPublisher(request: self)
     }
 
-    public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, Error>
+    public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, LocalError>
     where T: Decodable
     {
         return DataTaskClient.shared.responsePublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
