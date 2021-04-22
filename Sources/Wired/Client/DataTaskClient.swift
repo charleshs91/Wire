@@ -1,7 +1,7 @@
 import Foundation
 
 public final class DataTaskClient {
-    public typealias Completion<T> = (Result<T, Error>) -> Void
+    public typealias Completion<T> = (Result<T, LocalError>) -> Void
 
     /// The shared object of `DataTaskClient`.
     public static let shared: DataTaskClient = DataTaskClient(configuration: .default)
@@ -42,7 +42,7 @@ public final class DataTaskClient {
             case .success(let data):
                 switch dataConverter.convert(data: data) {
                 case .failure(let error):
-                    completion(.failure(error))
+                    completion(.failure(.responseConversionError(error)))
                 case .success(let output):
                     completion(.success(output))
                 }
@@ -60,7 +60,7 @@ public final class DataTaskClient {
     {
         switch request.buildRequest() {
         case .failure(let error):
-            completion(.failure(error))
+            completion(.failure(.requestFactoryError(error)))
             return nil
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { data, response, error in
@@ -71,10 +71,10 @@ public final class DataTaskClient {
                     return completion(.failure(LocalError.noResponse))
                 }
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    return completion(.failure(LocalError.notHttpResponse))
+                    return completion(.failure(LocalError.notHttpResponse(response: response)))
                 }
                 guard httpResponse.statusCode == 200 else {
-                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode)))
+                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode, data: data)))
                 }
                 guard let data = data else {
                     return completion(.failure(LocalError.noData))
