@@ -81,12 +81,31 @@ extension Request {
         DataTaskClient.shared.retrieveResponse(request: self, dataConverter: dataConverter, completion: completion)
     }
 
-    public func getJSON<T: Decodable>(ofType: T.Type,
-                                      using decoder: JSONDecoder = JSONDecoder(),
-                                      completion: @escaping (Result<T, Error>) -> Void)
+    public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, Error>) -> Void)
+    where T: Decodable
     {
         DataTaskClient.shared.retrieveResponse(request: self,
                                                dataConverter: JSONConverter<T>(decoder: decoder),
                                                completion: completion)
     }
 }
+
+#if canImport(Combine)
+import Combine
+
+@available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
+extension Request {
+    public var dataPublisher: AnyPublisher<Data, Error> {
+        return Future<Data, Error> { promise in
+            return getData(completion: promise)
+        }
+        .eraseToAnyPublisher()
+    }
+
+    public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, Error>
+    where T: Decodable
+    {
+        return DataTaskClient.shared.responsePublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+    }
+}
+#endif
