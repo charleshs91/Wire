@@ -37,9 +37,7 @@ extension Resource {
     public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, LocalError>) -> Void)
     where T: Decodable
     {
-        DataTaskClient.shared.retrieveResponse(request: self,
-                                               dataConverter: JSONConverter<T>(decoder: decoder),
-                                               completion: completion)
+        DataTaskClient.shared.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
     }
 }
 
@@ -55,7 +53,7 @@ extension Resource {
     public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, LocalError>
     where T: Decodable
     {
-        return DataTaskClient.shared.responsePublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+        return DataTaskClient.shared.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
     }
 }
 #endif
