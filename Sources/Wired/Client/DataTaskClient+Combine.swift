@@ -27,7 +27,7 @@ extension DataTaskClient {
     where T: RequestBuildable & ResponseConvertible
     {
         return Future { [weak self] promise in
-            self?.retrieveObject(request: request, completion: promise)
+            self?.retrieveObject(convertibleRequest: request, completion: promise)
         }
         .eraseToAnyPublisher()
     }

@@ -37,9 +37,7 @@ extension Resource {
     public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, LocalError>) -> Void)
     where T: Decodable
     {
-        DataTaskClient.shared.retrieveObject(request: self,
-                                               dataConverter: JSONConverter<T>(decoder: decoder),
-                                               completion: completion)
+        DataTaskClient.shared.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
     }
 }
 

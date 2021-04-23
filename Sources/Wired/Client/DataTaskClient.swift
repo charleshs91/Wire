@@ -8,6 +8,8 @@ public final class DataTaskClient {
 
     private let session: URLSession
 
+    private let dataConvertingQueue: DispatchQueue = DispatchQueue(label: "com.Wire.DataTaskClient.DataConvertingQueue", qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: nil)
+
     public init(session: URLSession = .shared) {
         self.session = session
     }
@@ -21,10 +23,10 @@ public final class DataTaskClient {
     ///   - request: An object that addresses both the generation of `URLRequest` and conversion from `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveObject<T>(request: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
+    public func retrieveObject<T>(convertibleRequest: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
     where T: RequestBuildable & ResponseConvertible
     {
-        return retrieveObject(request: request, dataConverter: request, completion: completion)
+        return retrieveObject(request: convertibleRequest, dataConverter: convertibleRequest, completion: completion)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -37,16 +39,19 @@ public final class DataTaskClient {
     where T: RequestBuildable,
           U: ResponseConvertible
     {
-        return retrieveData(request: request) { result in
+        return retrieveData(request: request) { [weak self] result in
             switch result {
             case .failure(let error):
                 completion(.failure(error))
             case .success(let data):
-                switch dataConverter.convert(data: data) {
-                case .failure(let error):
-                    completion(.failure(.responseConversionError(error)))
-                case .success(let output):
-                    completion(.success(output))
+                // Dispatch data converting operation to a separate DispatchQueue
+                self?.dataConvertingQueue.async {
+                    switch dataConverter.convert(data: data) {
+                    case .failure(let error):
+                        completion(.failure(.responseConversionError(error)))
+                    case .success(let output):
+                        completion(.success(output))
+                    }
                 }
             }
         }
