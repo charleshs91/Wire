@@ -6,7 +6,7 @@ public final class DataTaskClient {
     /// The shared object of `DataTaskClient` that uses `URLSession.shared` as its session.
     public static let shared: DataTaskClient = DataTaskClient()
 
-    private let session: URLSession
+    internal let session: URLSession
 
     private let dataConvertingQueue: DispatchQueue = DispatchQueue(label: "com.Wire.DataTaskClient.DataConvertingQueue", qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: nil)
 
@@ -84,6 +84,7 @@ public final class DataTaskClient {
                     return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode, data: data)))
                 }
                 guard let data = data else {
+                    // Should not happen.
                     return completion(.failure(LocalError.noData))
                 }
                 return completion(.success(data))

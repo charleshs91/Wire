@@ -1,6 +1,9 @@
 import Foundation
 
 public struct Resource: RequestBuildable {
+    /// Default `DataTaskClient` object for `Resource` instance. Enables unit-testing.
+    internal static var dataTaskClient = DataTaskClient.shared
+
     public let url: URL
     public let headers: [HTTP.Header]
     public let method: HTTP.Method
@@ -31,13 +34,13 @@ public struct Resource: RequestBuildable {
 
 extension Resource {
     public func getData(completion: @escaping (Result<Data, LocalError>) -> Void) {
-        DataTaskClient.shared.retrieveData(request: self, completion: completion)
+        Resource.dataTaskClient.retrieveData(request: self, completion: completion)
     }
 
     public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, LocalError>) -> Void)
     where T: Decodable
     {
-        DataTaskClient.shared.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
+        Resource.dataTaskClient.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
     }
 }
 
@@ -47,13 +50,13 @@ import Combine
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Resource {
     public var dataPublisher: AnyPublisher<Data, LocalError> {
-        return DataTaskClient.shared.dataPublisher(request: self)
+        return Resource.dataTaskClient.dataPublisher(request: self)
     }
 
     public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, LocalError>
     where T: Decodable
     {
-        return DataTaskClient.shared.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+        return Resource.dataTaskClient.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
     }
 }
 #endif

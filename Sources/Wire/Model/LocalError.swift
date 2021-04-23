@@ -1,7 +1,6 @@
 import Foundation
 
 public enum LocalError: LocalizedError {
-
     /// The URL string is invalid. The associated value represents the URL string,
     /// which is compared upon evaluating equality.
     case invalidURLString(String)
@@ -12,7 +11,7 @@ public enum LocalError: LocalizedError {
     /// No response from server
     case noResponse
 
-    /// The response is not HTTP. The `response` is taken into equality evaluation.
+    /// The response is not HTTP. The `response` is ignored upon evaluating equality.
     case notHttpResponse(response: URLResponse)
 
     /// HTTP response with status code other than 200. Only the `code` is taken into equality evaluation.
@@ -55,12 +54,11 @@ extension LocalError: Equatable {
             return leftString == rightString
         case (.sessionError, .sessionError),
              (.noResponse, .noResponse),
+             (.notHttpResponse, .notHttpResponse),
              (.noData, .noData),
              (.requestFactoryError, .requestFactoryError),
              (.responseConversionError, .responseConversionError):
             return true
-        case (.notHttpResponse(let leftResponse), .notHttpResponse(let rightResponse)):
-            return leftResponse == rightResponse
         case (.httpStatus(let leftCode, _), .httpStatus(let rightCode, _)):
             return leftCode == rightCode
         default:
