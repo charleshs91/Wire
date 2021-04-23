@@ -1,8 +1,17 @@
 import Foundation
 
+private var _dataTaskClient: DataTaskClient = .shared
+
 /// `Request` defines the handling of a networking request, including the generation and modification
 /// of `URLRequest` and transformation of the retrieved data into an `Output`.
 public struct Request<Output> {
+    /// Default `DataTaskClient` object for `Resource` instance. Enables unit-testing.
+    /// Use computed property because stored static variable is not allowed for generic type.
+    internal static var dataTaskClient: DataTaskClient {
+        get { return _dataTaskClient }
+        set { _dataTaskClient = newValue }
+    }
+
     private let requestFactory: RequestBuildable
     private let requestModifiers: [RequestModifiable]
     private let dataModifiers: [DataModifiable]
@@ -78,13 +87,13 @@ extension Request {
         let dataConverter = ResponseConverter { data -> Result<Data, Error> in
             return modifyResponse(data: data)
         }
-        DataTaskClient.shared.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
+        Request.dataTaskClient.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
     }
 
     public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, LocalError>) -> Void)
     where T: Decodable
     {
-        DataTaskClient.shared.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
+        Request.dataTaskClient.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
     }
 }
 
@@ -103,7 +112,7 @@ extension Request {
     public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, LocalError>
     where T: Decodable
     {
-        return DataTaskClient.shared.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+        return Request.dataTaskClient.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
     }
 }
 #endif

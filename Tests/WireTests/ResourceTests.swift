@@ -1,7 +1,16 @@
+import Foundation
 import XCTest
 @testable import Wire
 
 final class ResourceTests: XCTestCase {
+    override class func setUp() {
+        Resource.dataTaskClient = DataTaskClient(session: .testing)
+    }
+
+    override func tearDown() {
+        TestURLProtocol.clearHandlers()
+    }
+
     func testInitWithURL() {
         let res = Resource(url: .demo,
                            headers: [.contentType(.json),
@@ -36,5 +45,48 @@ final class ResourceTests: XCTestCase {
         for urlString in String.invalidURLStrings {
             XCTAssertNil(Resource(urlString: urlString))
         }
+    }
+
+    func testGetDataSuccess() {
+        TestURLProtocol.setHandler(request: URLRequest(url: .demo)) { req in
+            return (Data(), HTTPURLResponse(url: req.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+        }
+
+        let promise = expectation(description: #function)
+        Resource(url: .demo, headers: [], method: .get, body: nil).getData { result in
+            let data = try? result.get()
+            XCTAssertNotNil(data)
+            promise.fulfill()
+        }
+        wait(for: [promise], timeout: 10.0)
+    }
+
+    func testGetObjectSuccess() {
+        TestURLProtocol.setHandler(request: URLRequest(url: .demo)) { req in
+            let objectData = try! JSONEncoder().encode(TestCodableObj.success)
+            return (objectData, HTTPURLResponse(url: req.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+        }
+
+        let promise = expectation(description: #function)
+        Resource(url: .demo, headers: [], method: .get, body: nil).getObject(ofType: TestCodableObj.self) { result in
+            let object = try? result.get()
+            XCTAssertNotNil(object)
+            XCTAssertEqual(object?.description, TestCodableObj.success.description)
+            promise.fulfill()
+        }
+        wait(for: [promise], timeout: 10.0)
+    }
+
+    func testGetDataFailure() {
+        TestURLProtocol.setHandler(request: URLRequest(url: .demo)) { req in
+            return (nil, nil, TestError.failure)
+        }
+
+        let promise = expectation(description: #function)
+        Resource(url: .demo, headers: [], method: .get, body: nil).getData { result in
+            XCTAssertEqual(result.error as? LocalError, .sessionError(TestError.failure))
+            promise.fulfill()
+        }
+        wait(for: [promise], timeout: 10.0)
     }
 }
