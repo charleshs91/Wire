@@ -22,16 +22,40 @@ public struct Request<Output> {
     ///   - requestFactory: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
-    ///   - dataConverter: The closure which converts the modified data into an `Output`.
+    ///   - conversion: The closure which converts the modified data into an `Output`.
     public init(requestFactory: RequestBuildable,
                 requestModifiers: [RequestModifiable] = [],
                 dataModifiers: [DataModifiable] = [],
-                dataConverter: @escaping (Data) throws -> Output)
+                conversion: @escaping (Data) throws -> Output)
     {
         self.requestFactory = requestFactory
         self.requestModifiers = requestModifiers
         self.dataModifiers = dataModifiers
-        self.dataConverter = dataConverter
+        self.dataConverter = conversion
+    }
+
+    /// Creates a `Request` object.
+    /// - Parameters:
+    ///   - requestFactory: The `URLRequest` generating object.
+    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
+    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
+    ///   - dataConverter: A object that converts the modified data into an `Output`.
+    public init<T>(requestFactory: RequestBuildable,
+                   requestModifiers: [RequestModifiable] = [],
+                   dataModifiers: [DataModifiable] = [],
+                   dataConverter: T)
+    where T: ResponseConvertible,
+          T.Output == Output
+    {
+        self.requestFactory = requestFactory
+        self.requestModifiers = requestModifiers
+        self.dataModifiers = dataModifiers
+        self.dataConverter = { data in
+            switch dataConverter.convert(data: data) {
+            case .failure(let error): throw error
+            case .success(let output): return output
+            }
+        }
     }
 }
 
