@@ -1,17 +1,21 @@
 import Foundation
 
 public final class DataTaskClient {
-    public typealias Completion<T> = (Result<T, Error>) -> Void
+    public typealias Completion<T> = (Result<T, LocalError>) -> Void
 
-    /// The shared object of `DataTaskClient`.
-    public static let shared: DataTaskClient = DataTaskClient(configuration: .default)
+    /// The shared object of `DataTaskClient` that uses `URLSession.shared` as its session.
+    public static let shared: DataTaskClient = DataTaskClient()
 
-    private let configuration: URLSessionConfiguration
+    internal let session: URLSession
 
-    private lazy var session: URLSession = URLSession(configuration: configuration)
+    private let dataConvertingQueue: DispatchQueue = DispatchQueue(label: "com.Wire.DataTaskClient.DataConvertingQueue", qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: nil)
 
-    public init(configuration: URLSessionConfiguration) {
-        self.configuration = configuration
+    public init(session: URLSession = .shared) {
+        self.session = session
+    }
+
+    public init(configuration: URLSessionConfiguration, delegateQueue: OperationQueue? = nil) {
+        self.session = URLSession(configuration: configuration, delegate: nil, delegateQueue: delegateQueue)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -19,10 +23,10 @@ public final class DataTaskClient {
     ///   - request: An object that addresses both the generation of `URLRequest` and conversion from `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveResponse<T>(request: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
+    public func retrieveObject<T>(convertibleRequest: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
     where T: RequestBuildable & ResponseConvertible
     {
-        return retrieveResponse(request: request, dataConverter: request, completion: completion)
+        return retrieveObject(request: convertibleRequest, dataConverter: convertibleRequest, completion: completion)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -31,20 +35,23 @@ public final class DataTaskClient {
     ///   - dataConverter: An object that transforms `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveResponse<T, U>(request: T, dataConverter: U, completion: @escaping Completion<U.Output>) -> URLSessionDataTask?
+    public func retrieveObject<T, U>(request: T, dataConverter: U, completion: @escaping Completion<U.Output>) -> URLSessionDataTask?
     where T: RequestBuildable,
           U: ResponseConvertible
     {
-        return retrieveData(request: request) { result in
+        return retrieveData(request: request) { [weak self] result in
             switch result {
             case .failure(let error):
                 completion(.failure(error))
             case .success(let data):
-                switch dataConverter.convert(data: data) {
-                case .failure(let error):
-                    completion(.failure(error))
-                case .success(let output):
-                    completion(.success(output))
+                // Dispatch data converting operation to a separate DispatchQueue
+                self?.dataConvertingQueue.async {
+                    switch dataConverter.convert(data: data) {
+                    case .failure(let error):
+                        completion(.failure(.responseConversionError(error)))
+                    case .success(let output):
+                        completion(.success(output))
+                    }
                 }
             }
         }
@@ -60,7 +67,7 @@ public final class DataTaskClient {
     {
         switch request.buildRequest() {
         case .failure(let error):
-            completion(.failure(error))
+            completion(.failure(.requestFactoryError(error)))
             return nil
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { data, response, error in
@@ -71,12 +78,13 @@ public final class DataTaskClient {
                     return completion(.failure(LocalError.noResponse))
                 }
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    return completion(.failure(LocalError.notHttpResponse))
+                    return completion(.failure(LocalError.notHttpResponse(response: response)))
                 }
                 guard httpResponse.statusCode == 200 else {
-                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode)))
+                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode, data: data)))
                 }
                 guard let data = data else {
+                    // Should not happen.
                     return completion(.failure(LocalError.noData))
                 }
                 return completion(.success(data))
