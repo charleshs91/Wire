@@ -1,5 +1,5 @@
 import XCTest
-@testable import Wired
+@testable import Wire
 
 final class RequestConvertibleTests: XCTestCase {
     func testURLRequest() {
@@ -25,7 +25,7 @@ final class RequestConvertibleTests: XCTestCase {
         for urlString in String.invalidURLStrings {
             let req = urlString.buildRequest()
             XCTAssertThrowsError(try req.get(), "") { error in
-                XCTAssertTrue(error as? Wired.LocalError == .invalidURLString(urlString))
+                XCTAssertTrue(error as? Wire.LocalError == .invalidURLString(urlString))
             }
         }
     }

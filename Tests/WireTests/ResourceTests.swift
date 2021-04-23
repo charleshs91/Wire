@@ -1,5 +1,5 @@
 import XCTest
-@testable import Wired
+@testable import Wire
 
 final class ResourceTests: XCTestCase {
     func testInitWithURL() {
