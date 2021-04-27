@@ -59,6 +59,17 @@ public struct Request<Output> {
     }
 }
 
+extension Request where Output == Data {
+    /// Creates a `Request` object that does not perform conversion on the received data.
+    /// - Parameters:
+    ///   - requestFactory: The `URLRequest` generating object.
+    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
+    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
+    public init(requestBuilder: RequestBuildable, requestModifiers: [RequestModifiable] = [], dataModifiers: [DataModifiable] = []) {
+        self.init(requestBuilder: requestBuilder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in data })
+    }
+}
+
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
         switch requestBuilder.buildRequest() {
