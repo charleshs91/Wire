@@ -3,7 +3,7 @@ import XCTest
 
 final class RequestTests: XCTestCase {
     func testRequestBuildable() {
-        let request = Request<Data>(requestFactory: URLRequest(url: .demo), dataConverter: { data in data })
+        let request = Request<Data>(requestBuilder: URLRequest(url: .demo), conversion: { data in data })
         let urlRequest = try? request.buildRequest().get()
         XCTAssertNotNil(urlRequest)
         XCTAssertEqual(urlRequest?.url, URL.demo)
@@ -11,7 +11,7 @@ final class RequestTests: XCTestCase {
 
     func testRequestModifiers() {
         let request = Request<Data>(
-            requestFactory: URLRequest(url: .demo),
+            requestBuilder: URLRequest(url: .demo),
             requestModifiers: [
                 RequestModifier(closure: { req -> Result<URLRequest, Error> in
                     var req = req
@@ -25,7 +25,7 @@ final class RequestTests: XCTestCase {
                 })
             ],
             dataModifiers: [],
-            dataConverter: { data in data }
+            conversion: { data in data }
         )
         let urlRequest = try? request.buildRequest().get()
         XCTAssertNotNil(urlRequest)

@@ -25,9 +25,9 @@ final class ResourceTests: XCTestCase {
         XCTAssertEqual(req.httpMethod, "GET")
         XCTAssertEqual(
             req.allHTTPHeaderFields,
-            [HTTP.Header.contentType(.json).key: HTTP.Header.contentType(.json).value,
-             HTTP.Header.userAgent("iPhone").key: "iPhone",
-             HTTP.Header.authorization(.other("Auth")).key: "Auth",
+            [HTTPHeader.contentType(.json).key: HTTPHeader.contentType(.json).value,
+             HTTPHeader.userAgent("iPhone").key: "iPhone",
+             HTTPHeader.authorization(.other("Auth")).key: "Auth",
              "OtherKey": "OtherValue"]
         )
         XCTAssertEqual(req.httpBody, Data.demo)
@@ -38,7 +38,7 @@ final class ResourceTests: XCTestCase {
         XCTAssertNotNil(res)
         let req = try! res!.buildRequest().get()
         XCTAssertEqual(req.url?.absoluteString, String.validURLString)
-        XCTAssertTrue(req.allHTTPHeaderFields?[HTTP.Header.authorization(.bearer("Token")).key]?.starts(with: "Bearer ") ?? false)
+        XCTAssertTrue(req.allHTTPHeaderFields?[HTTPHeader.authorization(.bearer("Token")).key]?.starts(with: "Bearer ") ?? false)
     }
 
     func testInitWithInvalidString() {
