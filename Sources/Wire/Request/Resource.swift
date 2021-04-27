@@ -5,16 +5,28 @@ public struct Resource: RequestBuildable {
     internal static var dataTaskClient = DataTaskClient.shared
 
     public let url: URL
-    public let headers: [HTTP.Header]
-    public let method: HTTP.Method
+    public let headers: [HTTPHeader]
+    public let method: HTTPMethod
     public let body: Data?
 
-    public init?(urlString: String, headers: [HTTP.Header] = [], method: HTTP.Method = .get, body: Data? = nil) {
+    /// Creates a resource with a path represented by a string.
+    /// - Parameters:
+    ///   - urlString: The URL string of the resource.
+    ///   - headers: Header fields for the resource. Empty by default.
+    ///   - method: HTTP method for the resource. `.get` by default
+    ///   - body: Body of the URLRequest. `nil` by default.
+    public init?(urlString: String, headers: [HTTPHeader] = [], method: HTTPMethod = .get, body: Data? = nil) {
         guard let url = URL(string: urlString) else { return nil }
         self = Resource(url: url, headers: headers, method: method, body: body)
     }
 
-    public init(url: URL, headers: [HTTP.Header], method: HTTP.Method, body: Data?) {
+    /// Creates a resource that represents a `URLRequest`.
+    /// - Parameters:
+    ///   - url: `URL` of the resource.
+    ///   - headers: Header fields for the resource. Empty by default.
+    ///   - method: HTTP method for the resource. `.get` by default
+    ///   - body: Body of the URLRequest. `nil` by default.
+    public init(url: URL, headers: [HTTPHeader] = [], method: HTTPMethod = .get, body: Data? = nil) {
         self.url = url
         self.headers = headers
         self.method = method
