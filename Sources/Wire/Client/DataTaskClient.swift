@@ -8,7 +8,10 @@ public final class DataTaskClient {
 
     internal let session: URLSession
 
-    private let dataConvertingQueue: DispatchQueue = DispatchQueue(label: "com.Wire.DataTaskClient.DataConvertingQueue", qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: nil)
+    private let dataConvertingQueue = DispatchQueue(label: "com.Wire.DataTaskClient.DataConvertingQueue",
+                                                    qos: .default,
+                                                    attributes: .concurrent,
+                                                    autoreleaseFrequency: .inherit, target: nil)
 
     public init(session: URLSession = .shared) {
         self.session = session
@@ -67,7 +70,7 @@ public final class DataTaskClient {
     {
         switch request.buildRequest() {
         case .failure(let error):
-            completion(.failure(.requestFactoryError(error)))
+            completion(.failure(.requestBuildingError(error)))
             return nil
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { data, response, error in

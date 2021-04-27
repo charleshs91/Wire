@@ -4,7 +4,7 @@ import Foundation
 public struct JSONConverter<T: Decodable>: ResponseConvertible {
     private let decoder: JSONDecoder
 
-    public init(decoder: JSONDecoder) {
+    public init(decoder: JSONDecoder = JSONDecoder()) {
         self.decoder = decoder
     }
 

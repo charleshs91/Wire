@@ -12,7 +12,7 @@ public struct Request<Output> {
         set { _dataTaskClient = newValue }
     }
 
-    private let requestFactory: RequestBuildable
+    private let requestBuilder: RequestBuildable
     private let requestModifiers: [RequestModifiable]
     private let dataModifiers: [DataModifiable]
     private let dataConverter: (Data) throws -> Output
@@ -23,12 +23,12 @@ public struct Request<Output> {
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
     ///   - conversion: The closure which converts the modified data into an `Output`.
-    public init(requestFactory: RequestBuildable,
+    public init(requestBuilder: RequestBuildable,
                 requestModifiers: [RequestModifiable] = [],
                 dataModifiers: [DataModifiable] = [],
                 conversion: @escaping (Data) throws -> Output)
     {
-        self.requestFactory = requestFactory
+        self.requestBuilder = requestBuilder
         self.requestModifiers = requestModifiers
         self.dataModifiers = dataModifiers
         self.dataConverter = conversion
@@ -47,7 +47,7 @@ public struct Request<Output> {
     where T: ResponseConvertible,
           T.Output == Output
     {
-        self.requestFactory = requestFactory
+        self.requestBuilder = requestFactory
         self.requestModifiers = requestModifiers
         self.dataModifiers = dataModifiers
         self.dataConverter = { data in
@@ -61,7 +61,7 @@ public struct Request<Output> {
 
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
-        switch requestFactory.buildRequest() {
+        switch requestBuilder.buildRequest() {
         case .failure(let error): return .failure(error)
         case .success(let urlRequest):
             var outputRequest = urlRequest

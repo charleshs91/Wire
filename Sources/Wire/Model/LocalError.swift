@@ -21,7 +21,7 @@ public enum LocalError: LocalizedError {
     case noData
 
     /// Error from `RequestBuildable.buildRequest()`. The `error` is ignored upon evaluating equality.
-    case requestFactoryError(Error)
+    case requestBuildingError(Error)
 
     /// Error from `ResponseConvertible.convert(data:)`. The `error` is ignored upon evaluating equality.
     case responseConversionError(Error)
@@ -40,7 +40,7 @@ public enum LocalError: LocalizedError {
             return "HTTP response status code: \(code)"
         case .noData:
             return "Server did not provide data."
-        case .requestFactoryError(let error),
+        case .requestBuildingError(let error),
              .responseConversionError(let error):
             return error.localizedDescription
         }
@@ -56,7 +56,7 @@ extension LocalError: Equatable {
              (.noResponse, .noResponse),
              (.notHttpResponse, .notHttpResponse),
              (.noData, .noData),
-             (.requestFactoryError, .requestFactoryError),
+             (.requestBuildingError, .requestBuildingError),
              (.responseConversionError, .responseConversionError):
             return true
         case (.httpStatus(let leftCode, _), .httpStatus(let rightCode, _)):

@@ -1,6 +1,6 @@
 import Foundation
 
-extension HTTP.Header {
+extension HTTPHeader {
     /// Represents content of the `Content-Type` HTTP header field.
     public enum ContentType {
         case formData

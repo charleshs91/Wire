@@ -1,6 +1,6 @@
 import Foundation
 
-extension HTTP.Header {
+extension HTTPHeader {
     /// Represents content of the `Authorization` HTTP header field.
     public enum Authorization {
         case basic(_ token: String)
