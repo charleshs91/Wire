@@ -1,14 +1,20 @@
 import Foundation
 
 /// Represents a HTTP method.
-public enum HTTPMethod: String {
-    case get = "GET"
-    case head = "HEAD"
-    case post = "POST"
-    case put = "PUT"
-    case delete = "DELETE"
-    case connect = "CONNECT"
-    case options = "OPTIONS"
-    case trace = "TRACE"
-    case patch = "PATCH"
+public struct HTTPMethod {
+    public static let get: HTTPMethod = HTTPMethod(value: "GET")
+    public static let head: HTTPMethod = HTTPMethod(value: "HEAD")
+    public static let post: HTTPMethod = HTTPMethod(value: "POST")
+    public static let put: HTTPMethod = HTTPMethod(value: "PUT")
+    public static let delete: HTTPMethod = HTTPMethod(value: "DELETE")
+    public static let connect: HTTPMethod = HTTPMethod(value: "CONNECT")
+    public static let options: HTTPMethod = HTTPMethod(value: "OPTIONS")
+    public static let trace: HTTPMethod = HTTPMethod(value: "TRACE")
+    public static let patch: HTTPMethod = HTTPMethod(value: "PATCH")
+
+    public let value: String
+
+    public init(value: String) {
+        self.value = value
+    }
 }

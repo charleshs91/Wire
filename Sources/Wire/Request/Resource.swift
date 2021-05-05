@@ -35,7 +35,7 @@ public struct Resource: RequestBuildable {
 
     public func buildRequest() -> Result<URLRequest, Error> {
         var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = method.rawValue
+        urlRequest.httpMethod = method.value
         headers.forEach { $0.modify(request: &urlRequest) }
         urlRequest.httpBody = body
         return .success(urlRequest)
