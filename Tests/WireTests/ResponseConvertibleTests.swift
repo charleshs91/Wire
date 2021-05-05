@@ -1,7 +1,7 @@
 import XCTest
 @testable import Wire
 
-final class ResponseConverterTests: XCTestCase {
+final class ResponseConvertibleTests: XCTestCase {
     func testClosureInit() {
         let converter = AnyResponseConvertible<String> { data -> Result<String, Error> in
             let aString = String(data: data, encoding: .utf8)!

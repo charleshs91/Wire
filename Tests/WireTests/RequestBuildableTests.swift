@@ -1,7 +1,7 @@
 import XCTest
 @testable import Wire
 
-final class RequestConvertibleTests: XCTestCase {
+final class RequestBuildableTests: XCTestCase {
     func testURLRequest() {
         let urlRequest = URLRequest(url: .demo)
         let req = urlRequest.buildRequest()

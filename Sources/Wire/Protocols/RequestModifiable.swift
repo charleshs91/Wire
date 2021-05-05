@@ -13,7 +13,6 @@ extension RequestModifiable {
             HTTPHeader.other(key: key, value: value)
         }
         set(headers: headers, to: &request, mergesField: mergesField)
-
     }
 
     public func set(headers: [HTTPHeader], to request: inout URLRequest, mergesField: Bool = true) {

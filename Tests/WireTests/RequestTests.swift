@@ -24,8 +24,7 @@ final class RequestTests: XCTestCase {
                     return .success(req)
                 })
             ],
-            dataModifiers: [],
-            conversion: { data in data }
+            dataModifiers: []
         )
         let urlRequest = try? request.buildRequest().get()
         XCTAssertNotNil(urlRequest)
