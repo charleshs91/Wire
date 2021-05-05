@@ -7,7 +7,7 @@ import XCTest
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 final class ResourcePublisherTests: XCTestCase {
-    private let testingClient = DataTaskClient(session: .testing)
+    private let client = DataTaskClient(session: .testing)
     private var disposables: Set<AnyCancellable> = []
 
     override func tearDown() {
@@ -21,7 +21,7 @@ final class ResourcePublisherTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, method: .get, headers: [], body: nil).dataPublisher(client: testingClient)
+        Resource(url: .demo, method: .get, headers: [], body: nil).dataPublisher(client: client)
             .sink(receiveCompletion: { _ in promise.fulfill() }) { data in
                 XCTAssertEqual(data.utf8String(or: ""), "OK")
             }
@@ -37,7 +37,7 @@ final class ResourcePublisherTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, method: .get, headers: [], body: nil).objectPublisher(client: testingClient, asType: TestCodableObj.self)
+        Resource(url: .demo, method: .get, headers: [], body: nil).objectPublisher(client: client, asType: TestCodableObj.self)
             .sink(receiveCompletion: { _ in promise.fulfill() }) { object in
                 XCTAssertEqual(object.description, TestCodableObj.success.description)
             }
