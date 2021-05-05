@@ -5,7 +5,7 @@ final class RequestModifierTests: XCTestCase {
     func testInit() {
         let requestModifier = RequestModifier { req -> Result<URLRequest, Error> in
             var req = req
-            req.httpMethod = HTTPMethod.post.rawValue
+            req.httpMethod = HTTPMethod.post.value
             return .success(req)
         }
         let origRequest = URLRequest(url: .demo)
