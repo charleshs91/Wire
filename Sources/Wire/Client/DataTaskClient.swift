@@ -1,7 +1,7 @@
 import Foundation
 
 public final class DataTaskClient {
-    public typealias Completion<T> = (Result<T, LocalError>) -> Void
+    public typealias Completion<T> = (Result<T, BaseError>) -> Void
 
     /// The shared object of `DataTaskClient` that uses `URLSession.shared` as its session.
     public static let shared: DataTaskClient = DataTaskClient()
@@ -26,10 +26,11 @@ public final class DataTaskClient {
     ///   - request: An object that addresses both the generation of `URLRequest` and conversion from `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveObject<T>(convertibleRequest: T, completion: @escaping Completion<T.Output>) -> URLSessionDataTask?
-    where T: RequestBuildable & ResponseConvertible
-    {
-        return retrieveObject(request: convertibleRequest, dataConverter: convertibleRequest, completion: completion)
+    public func retrieveObject<T: RequestBuildable & ResponseConvertible>(
+        request: T,
+        completion: @escaping Completion<T.Output>
+    ) -> URLSessionDataTask? {
+        return retrieveObject(request: request, dataConverter: request, completion: completion)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -38,10 +39,11 @@ public final class DataTaskClient {
     ///   - dataConverter: An object that transforms `Data` into an `Output` value.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveObject<T, U>(request: T, dataConverter: U, completion: @escaping Completion<U.Output>) -> URLSessionDataTask?
-    where T: RequestBuildable,
-          U: ResponseConvertible
-    {
+    public func retrieveObject<T: RequestBuildable, U: ResponseConvertible>(
+        request: T,
+        dataConverter: U,
+        completion: @escaping Completion<U.Output>
+    ) -> URLSessionDataTask? {
         return retrieveData(request: request) { [weak self] result in
             switch result {
             case .failure(let error):
@@ -65,9 +67,7 @@ public final class DataTaskClient {
     ///   - request: An object that addresses the generation of `URLRequest`.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveData<T>(request: T, completion: @escaping Completion<Data>) -> URLSessionDataTask?
-    where T: RequestBuildable
-    {
+    public func retrieveData<T: RequestBuildable>(request: T, completion: @escaping Completion<Data>) -> URLSessionDataTask? {
         switch request.buildRequest() {
         case .failure(let error):
             completion(.failure(.requestBuildingError(error)))
@@ -75,20 +75,20 @@ public final class DataTaskClient {
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { data, response, error in
                 if let error = error {
-                    return completion(.failure(LocalError.sessionError(error)))
+                    return completion(.failure(BaseError.sessionError(error)))
                 }
                 guard let response = response else {
-                    return completion(.failure(LocalError.noResponse))
+                    return completion(.failure(BaseError.noResponse))
                 }
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    return completion(.failure(LocalError.notHttpResponse(response: response)))
+                    return completion(.failure(BaseError.notHttpResponse(response: response)))
                 }
                 guard httpResponse.statusCode == 200 else {
-                    return completion(.failure(LocalError.httpStatus(code: httpResponse.statusCode, data: data)))
+                    return completion(.failure(BaseError.httpStatus(code: httpResponse.statusCode, data: data)))
                 }
                 guard let data = data else {
                     // Should not happen.
-                    return completion(.failure(LocalError.noData))
+                    return completion(.failure(BaseError.noData))
                 }
                 return completion(.success(data))
             }

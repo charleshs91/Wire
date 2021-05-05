@@ -1,17 +1,8 @@
 import Foundation
 
-private var _dataTaskClient: DataTaskClient = .shared
-
 /// `Request` defines the handling of a networking request, including the generation and modification
 /// of `URLRequest` and transformation of the retrieved data into an `Output`.
 public struct Request<Output> {
-    /// Default `DataTaskClient` object for `Resource` instance. Enables unit-testing.
-    /// Use computed property because stored static variable is not allowed for generic type.
-    internal static var dataTaskClient: DataTaskClient {
-        get { return _dataTaskClient }
-        set { _dataTaskClient = newValue }
-    }
-
     private let requestBuilder: RequestBuildable
     private let requestModifiers: [RequestModifiable]
     private let dataModifiers: [DataModifiable]
@@ -118,17 +109,20 @@ extension Request: ResponseConvertible {
 }
 
 extension Request {
-    public func getData(completion: @escaping (Result<Data, LocalError>) -> Void) {
+    public func retrieveData(client: DataTaskClient = .shared, completion: @escaping (Result<Data, BaseError>) -> Void) {
         let dataConverter = ResponseConverter { data -> Result<Data, Error> in
             return modifyResponse(data: data)
         }
-        Request.dataTaskClient.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
+        client.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
     }
 
-    public func getObject<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder(), completion: @escaping (Result<T, LocalError>) -> Void)
-    where T: Decodable
-    {
-        Request.dataTaskClient.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
+    public func retrieveObject<T: Decodable>(
+        client: DataTaskClient = .shared,
+        ofType: T.Type = T.self,
+        using decoder: JSONDecoder = JSONDecoder(),
+        completion: @escaping (Result<T, BaseError>) -> Void
+    ) {
+        client.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
     }
 }
 
@@ -137,17 +131,19 @@ import Combine
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
-    public var dataPublisher: AnyPublisher<Data, LocalError> {
-        return Future<Data, LocalError> { promise in
-            return getData(completion: promise)
+    public func dataPublisher(client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
+        return Future<Data, BaseError> { promise in
+            return retrieveData(client: client, completion: promise)
         }
         .eraseToAnyPublisher()
     }
 
-    public func objectPublisher<T>(ofType: T.Type, using decoder: JSONDecoder = JSONDecoder()) -> AnyPublisher<T, LocalError>
-    where T: Decodable
-    {
-        return Request.dataTaskClient.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+    public func objectPublisher<T: Decodable>(
+        client: DataTaskClient = .shared,
+        ofType: T.Type = T.self,
+        using decoder: JSONDecoder = JSONDecoder()
+    ) -> AnyPublisher<T, BaseError> {
+        return client.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
     }
 }
 #endif
