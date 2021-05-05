@@ -8,10 +8,11 @@ public final class DataTaskClient {
 
     internal let session: URLSession
 
-    private let dataConvertingQueue = DispatchQueue(label: "com.Wire.DataTaskClient.DataConvertingQueue",
-                                                    qos: .default,
-                                                    attributes: .concurrent,
-                                                    autoreleaseFrequency: .inherit, target: nil)
+    private let responseProcessingQueue = DispatchQueue(label: "Wire.DataTaskClient.responseProcessingQueue",
+                                                        qos: .userInteractive,
+                                                        attributes: .concurrent,
+                                                        autoreleaseFrequency: .inherit,
+                                                        target: nil)
 
     public init(session: URLSession = .shared) {
         self.session = session
@@ -44,19 +45,20 @@ public final class DataTaskClient {
         dataConverter: U,
         completion: @escaping Completion<U.Output>
     ) -> URLSessionDataTask? {
-        return retrieveData(request: request) { [weak self] result in
+        return retrieveData(request: request) { result in
             switch result {
             case .failure(let error):
+                // data retrieving failure
                 completion(.failure(error))
             case .success(let data):
-                // Dispatch data converting operation to a separate DispatchQueue
-                self?.dataConvertingQueue.async {
-                    switch dataConverter.convert(data: data) {
-                    case .failure(let error):
-                        completion(.failure(.responseConversionError(error)))
-                    case .success(let output):
-                        completion(.success(output))
-                    }
+                // data retrieving success
+                switch dataConverter.convert(data: data) {
+                case .failure(let error):
+                    // data conversion failure
+                    completion(.failure(.responseConversionError(error)))
+                case .success(let output):
+                    // data conversion success
+                    completion(.success(output))
                 }
             }
         }
@@ -73,28 +75,38 @@ public final class DataTaskClient {
             completion(.failure(.requestBuildingError(error)))
             return nil
         case .success(let urlRequest):
-            let dataTask = session.dataTask(with: urlRequest) { data, response, error in
-                if let error = error {
-                    return completion(.failure(BaseError.sessionError(error)))
+            let dataTask = session.dataTask(with: urlRequest) { [weak self] data, response, error in
+                // Dispatches response-processing operation to a separate queue
+                self?.responseProcessingQueue.async {
+                    guard let result = self?.process(data: data, response: response, error: error) else { return }
+                    completion(result)
                 }
-                guard let response = response else {
-                    return completion(.failure(BaseError.noResponse))
-                }
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    return completion(.failure(BaseError.notHttpResponse(response: response)))
-                }
-                guard httpResponse.statusCode == 200 else {
-                    return completion(.failure(BaseError.httpStatus(code: httpResponse.statusCode, data: data)))
-                }
-                guard let data = data else {
-                    // Should not happen.
-                    return completion(.failure(BaseError.noData))
-                }
-                return completion(.success(data))
             }
 
             dataTask.resume()
             return dataTask
         }
+    }
+
+    /// Converts the received result of `session.dataTask(with:completionHandler:)` into a value of `Result<Data, BaseError>`.
+    private func process(data: Data?, response: URLResponse?, error: Error?) -> Result<Data, BaseError> {
+        if let error = error {
+            return .failure(BaseError.sessionError(error))
+        }
+        guard let response = response else {
+            return .failure(BaseError.noResponse)
+        }
+        guard let httpResponse = response as? HTTPURLResponse else {
+            return .failure(BaseError.notHttpResponse(response: response))
+        }
+        guard httpResponse.statusCode == 200 else {
+            return .failure(BaseError.httpStatus(code: httpResponse.statusCode, data: data))
+        }
+        guard let data = data else {
+            // Should not happen.
+            return .failure(BaseError.noData)
+        }
+
+        return .success(data)
     }
 }

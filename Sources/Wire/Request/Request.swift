@@ -10,15 +10,16 @@ public struct Request<Output> {
 
     /// Creates a `Request` object.
     /// - Parameters:
-    ///   - requestFactory: The `URLRequest` generating object.
+    ///   - requestBuilder: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
     ///   - conversion: The closure which converts the modified data into an `Output`.
-    public init(requestBuilder: RequestBuildable,
-                requestModifiers: [RequestModifiable] = [],
-                dataModifiers: [DataModifiable] = [],
-                conversion: @escaping (Data) throws -> Output)
-    {
+    public init(
+        requestBuilder: RequestBuildable,
+        requestModifiers: [RequestModifiable] = [],
+        dataModifiers: [DataModifiable] = [],
+        conversion: @escaping (Data) throws -> Output
+    ) {
         self.requestBuilder = requestBuilder
         self.requestModifiers = requestModifiers
         self.dataModifiers = dataModifiers
@@ -27,21 +28,17 @@ public struct Request<Output> {
 
     /// Creates a `Request` object.
     /// - Parameters:
-    ///   - requestFactory: The `URLRequest` generating object.
+    ///   - requestBuilder: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
     ///   - dataConverter: A object that converts the modified data into an `Output`.
-    public init<T>(requestFactory: RequestBuildable,
-                   requestModifiers: [RequestModifiable] = [],
-                   dataModifiers: [DataModifiable] = [],
-                   dataConverter: T)
-    where T: ResponseConvertible,
-          T.Output == Output
-    {
-        self.requestBuilder = requestFactory
-        self.requestModifiers = requestModifiers
-        self.dataModifiers = dataModifiers
-        self.dataConverter = { data in
+    public init<T: ResponseConvertible>(
+        requestBuilder: RequestBuildable,
+        requestModifiers: [RequestModifiable] = [],
+        dataModifiers: [DataModifiable] = [],
+        dataConverter: T
+    ) where T.Output == Output {
+        self.init(requestBuilder: requestBuilder, requestModifiers: requestModifiers, dataModifiers: dataModifiers) { data in
             switch dataConverter.convert(data: data) {
             case .failure(let error): throw error
             case .success(let output): return output
@@ -51,9 +48,9 @@ public struct Request<Output> {
 }
 
 extension Request where Output == Data {
-    /// Creates a `Request` object that does not perform conversion on the received data.
+    /// Creates a `Request` object that does not perform conversion on the processed data.
     /// - Parameters:
-    ///   - requestFactory: The `URLRequest` generating object.
+    ///   - requestBuilder: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
     public init(requestBuilder: RequestBuildable, requestModifiers: [RequestModifiable] = [], dataModifiers: [DataModifiable] = []) {
@@ -64,7 +61,8 @@ extension Request where Output == Data {
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
         switch requestBuilder.buildRequest() {
-        case .failure(let error): return .failure(error)
+        case .failure(let error):
+            return .failure(error)
         case .success(let urlRequest):
             var outputRequest = urlRequest
 
@@ -83,7 +81,8 @@ extension Request: RequestBuildable {
 extension Request: ResponseConvertible {
     public func convert(data: Data) -> Result<Output, Error> {
         switch modifyResponse(data: data) {
-        case .failure(let error): return .failure(error)
+        case .failure(let error):
+            return .failure(error)
         case .success(let data):
             do {
                 let output = try dataConverter(data)
@@ -99,8 +98,10 @@ extension Request: ResponseConvertible {
 
         for modifier in dataModifiers {
             switch modifier.modify(outputData) {
-            case .failure(let error): return .failure(error)
-            case .success(let data): outputData = data
+            case .failure(let error):
+                return .failure(error)
+            case .success(let data):
+                outputData = data
             }
         }
         // Return the original data if `responseModifiers` is empty.
@@ -109,20 +110,24 @@ extension Request: ResponseConvertible {
 }
 
 extension Request {
-    public func retrieveData(client: DataTaskClient = .shared, completion: @escaping (Result<Data, BaseError>) -> Void) {
+    public func retrieveData(
+        by client: DataTaskClient = .shared,
+        completion: @escaping (Result<Data, BaseError>) -> Void
+    ) {
         let dataConverter = ResponseConverter { data -> Result<Data, Error> in
             return modifyResponse(data: data)
         }
         client.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
     }
 
-    public func retrieveObject<T: Decodable>(
-        client: DataTaskClient = .shared,
-        ofType: T.Type = T.self,
-        using decoder: JSONDecoder = JSONDecoder(),
-        completion: @escaping (Result<T, BaseError>) -> Void
+    public func retrieveObject(
+        by client: DataTaskClient = .shared,
+        completion: @escaping (Result<Output, BaseError>) -> Void
     ) {
-        client.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
+        let dataConverter = ResponseConverter { data -> Result<Output, Error> in
+            return convert(data: data)
+        }
+        client.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
     }
 }
 
@@ -131,19 +136,23 @@ import Combine
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
-    public func dataPublisher(client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
+    public func dataPublisher(
+        client: DataTaskClient = .shared
+    ) -> AnyPublisher<Data, BaseError> {
         return Future<Data, BaseError> { promise in
-            return retrieveData(client: client, completion: promise)
+            return retrieveData(by: client, completion: promise)
         }
         .eraseToAnyPublisher()
     }
 
-    public func objectPublisher<T: Decodable>(
+    public func objectPublisher(
         client: DataTaskClient = .shared,
-        ofType: T.Type = T.self,
         using decoder: JSONDecoder = JSONDecoder()
-    ) -> AnyPublisher<T, BaseError> {
-        return client.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+    ) -> AnyPublisher<Output, BaseError> {
+        return Future<Output, BaseError> { promise in
+            return retrieveObject(by: client, completion: promise)
+        }
+        .eraseToAnyPublisher()
     }
 }
 #endif

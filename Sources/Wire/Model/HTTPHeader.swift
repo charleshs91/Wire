@@ -82,7 +82,14 @@ public enum HTTPHeader: RequestModifiable {
     }
 
     /// Modifies a URLRequest to apply this header.
-    internal func modify(request: inout URLRequest) {
-        request.setValue(value, forHTTPHeaderField: key)
+    /// - Parameters:
+    ///   - request: The request to apply headers to
+    ///   - mergesField: Determines if the content gets merged to the same field. It defaults to `true`.
+    internal func modify(request: inout URLRequest, mergesField: Bool = true) {
+        if mergesField {
+            request.addValue(value, forHTTPHeaderField: key)
+        } else {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
     }
 }

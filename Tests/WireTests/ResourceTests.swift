@@ -51,7 +51,7 @@ final class ResourceTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, headers: [], method: .get, body: nil).retrieveData(client: testingClient) { result in
+        Resource(url: .demo, headers: [], method: .get, body: nil).retrieveData(by: testingClient) { result in
             let data = try? result.get()
             XCTAssertNotNil(data)
             promise.fulfill()
@@ -66,7 +66,7 @@ final class ResourceTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, headers: [], method: .get, body: nil).retrieveObject(client: testingClient, ofType: TestCodableObj.self) { result in
+        Resource(url: .demo, headers: [], method: .get, body: nil).retrieveObject(by: testingClient, asType: TestCodableObj.self) { result in
             let object = try? result.get()
             XCTAssertNotNil(object)
             XCTAssertEqual(object?.description, TestCodableObj.success.description)
@@ -81,7 +81,7 @@ final class ResourceTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, headers: [], method: .get, body: nil).retrieveData(client: testingClient) { result in
+        Resource(url: .demo, headers: [], method: .get, body: nil).retrieveData(by: testingClient) { result in
             XCTAssertEqual(result.error as? BaseError, .sessionError(TestError.failure))
             promise.fulfill()
         }
