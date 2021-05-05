@@ -20,7 +20,7 @@ extension URL: RequestBuildable {
 extension String: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
         guard let url = URL(string: self) else {
-            return .failure(LocalError.invalidURLString(self))
+            return .failure(BaseError.invalidURLString(self))
         }
         return .success(URLRequest(url: url))
     }

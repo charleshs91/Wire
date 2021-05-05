@@ -3,9 +3,7 @@ import XCTest
 @testable import Wire
 
 final class ResourceTests: XCTestCase {
-    override class func setUp() {
-        Resource.dataTaskClient = DataTaskClient(session: .testing)
-    }
+    private let testingClient = DataTaskClient(session: .testing)
 
     override func tearDown() {
         TestURLProtocol.clearHandlers()
@@ -13,11 +11,11 @@ final class ResourceTests: XCTestCase {
 
     func testInitWithURL() {
         let res = Resource(url: .demo,
+                           method: .get,
                            headers: [.contentType(.json),
                                      .userAgent("iPhone"),
                                      .authorization(.other("Auth")),
                                      .other(key: "OtherKey", value: "OtherValue")],
-                           method: .get,
                            body: .demo)
         XCTAssertNoThrow(try res.buildRequest().get())
         let req = try! res.buildRequest().get()
@@ -53,7 +51,7 @@ final class ResourceTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, headers: [], method: .get, body: nil).getData { result in
+        Resource(url: .demo, method: .get, headers: [], body: nil).retrieveData(by: testingClient) { result in
             let data = try? result.get()
             XCTAssertNotNil(data)
             promise.fulfill()
@@ -68,7 +66,7 @@ final class ResourceTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, headers: [], method: .get, body: nil).getObject(ofType: TestCodableObj.self) { result in
+        Resource(url: .demo, method: .get, headers: [], body: nil).retrieveObject(by: testingClient, asType: TestCodableObj.self) { result in
             let object = try? result.get()
             XCTAssertNotNil(object)
             XCTAssertEqual(object?.description, TestCodableObj.success.description)
@@ -83,8 +81,8 @@ final class ResourceTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        Resource(url: .demo, headers: [], method: .get, body: nil).getData { result in
-            XCTAssertEqual(result.error as? LocalError, .sessionError(TestError.failure))
+        Resource(url: .demo, method: .get, headers: [], body: nil).retrieveData(by: testingClient) { result in
+            XCTAssertEqual(result.error as? BaseError, .sessionError(TestError.failure))
             promise.fulfill()
         }
         wait(for: [promise], timeout: 10.0)

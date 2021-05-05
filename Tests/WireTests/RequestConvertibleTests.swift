@@ -25,7 +25,7 @@ final class RequestConvertibleTests: XCTestCase {
         for urlString in String.invalidURLStrings {
             let req = urlString.buildRequest()
             XCTAssertThrowsError(try req.get(), "") { error in
-                XCTAssertTrue(error as? Wire.LocalError == .invalidURLString(urlString))
+                XCTAssertTrue(error as? Wire.BaseError == .invalidURLString(urlString))
             }
         }
     }

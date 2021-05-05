@@ -25,8 +25,8 @@ final class DataTaskClientTests: XCTestCase {
         TestURLProtocol.setHandler(request: URLRequest(url: .noResponse)) { req in
             return (nil, nil, nil)
         }
-        client.retrieveData(request: Resource(url: .noResponse, headers: [], method: .get, body: nil)) { result in
-            XCTAssertEqual(result.error as? LocalError, .noResponse)
+        client.retrieveData(request: Resource(url: .noResponse, method: .get, headers: [], body: nil)) { result in
+            XCTAssertEqual(result.error as? BaseError, .noResponse)
             promise.fulfill()
         }
         wait(for: [promise], timeout: 10.0)
@@ -39,8 +39,8 @@ final class DataTaskClientTests: XCTestCase {
         TestURLProtocol.setHandler(request: URLRequest(url: .notHTTP)) { req in
             return (nil, urlResponse, nil)
         }
-        client.retrieveData(request: Resource(url: .notHTTP, headers: [], method: .get, body: nil)) { result in
-            XCTAssertEqual(result.error as? LocalError, .notHttpResponse(response: urlResponse))
+        client.retrieveData(request: Resource(url: .notHTTP, method: .get, headers: [], body: nil)) { result in
+            XCTAssertEqual(result.error as? BaseError, .notHttpResponse(response: urlResponse))
             promise.fulfill()
         }
         wait(for: [promise], timeout: 10.0)
@@ -52,8 +52,8 @@ final class DataTaskClientTests: XCTestCase {
         TestURLProtocol.setHandler(request: URLRequest(url: .statusCode(401))) { req in
             return (Data(), HTTPURLResponse(url: .statusCode(401), statusCode: 401, httpVersion: nil, headerFields: nil), nil)
         }
-        client.retrieveData(request: Resource(url: .statusCode(401), headers: [], method: .get, body: nil)) { result in
-            XCTAssertEqual(result.error as? LocalError, .httpStatus(code: 401, data: Data()))
+        client.retrieveData(request: Resource(url: .statusCode(401), method: .get, headers: [], body: nil)) { result in
+            XCTAssertEqual(result.error as? BaseError, .httpStatus(code: 401, data: Data()))
             promise.fulfill()
         }
         wait(for: [promise], timeout: 10.0)
