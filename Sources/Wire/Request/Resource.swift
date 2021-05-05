@@ -1,14 +1,17 @@
+#if canImport(Combine)
+import Combine
+#endif
 import Foundation
 
-public struct Resource: RequestBuildable {
+public struct Resource {
     /// URL of a URLRequest.
     public let url: URL
 
-    /// Headers of a URLRequest
-    public let headers: [HTTPHeader]
-
     /// HTTP method of a URLRequest
     public let method: HTTPMethod
+
+    /// Headers of a URLRequest
+    public let headers: [HTTPHeader]
 
     /// Body of a URLRequest
     public let body: Data?
@@ -16,27 +19,31 @@ public struct Resource: RequestBuildable {
     /// Creates a resource with a path represented by a string.
     /// - Parameters:
     ///   - urlString: The URL string of the resource.
-    ///   - headers: Header fields for the resource. Empty by default.
     ///   - method: HTTP method for the resource. `.get` by default
+    ///   - headers: Header fields for the resource. Empty by default.
     ///   - body: Body of the URLRequest. `nil` by default.
-    public init?(urlString: String, headers: [HTTPHeader] = [], method: HTTPMethod = .get, body: Data? = nil) {
+    public init?(urlString: String, method: HTTPMethod = .get, headers: [HTTPHeader] = [], body: Data? = nil) {
         guard let url = URL(string: urlString) else { return nil }
-        self = Resource(url: url, headers: headers, method: method, body: body)
+        self = Resource(url: url, method: method, headers: headers, body: body)
     }
 
     /// Creates a resource that represents a `URLRequest`.
     /// - Parameters:
     ///   - url: `URL` of the resource.
-    ///   - headers: Header fields for the resource. Empty by default.
     ///   - method: HTTP method for the resource. `.get` by default
+    ///   - headers: Header fields for the resource. Empty by default.
     ///   - body: Body of the URLRequest. `nil` by default.
-    public init(url: URL, headers: [HTTPHeader] = [], method: HTTPMethod = .get, body: Data? = nil) {
+    public init(url: URL, method: HTTPMethod = .get, headers: [HTTPHeader] = [], body: Data? = nil) {
         self.url = url
         self.headers = headers
         self.method = method
         self.body = body
     }
+}
 
+// MARK: - RequestBuildable conformance
+
+extension Resource: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = method.value
@@ -46,7 +53,7 @@ public struct Resource: RequestBuildable {
     }
 }
 
-// MARK: - Methods incorporating DataTaskClient
+// MARK: - Convenient methods
 
 extension Resource {
     public func retrieveData(
@@ -66,8 +73,7 @@ extension Resource {
     }
 }
 
-#if canImport(Combine)
-import Combine
+// MARK: - Supporting Combine framework
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Resource {
@@ -85,4 +91,16 @@ extension Resource {
         return client.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
     }
 }
-#endif
+
+// MARK: - Debugging
+
+extension Resource: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        return """
+        URLString = \(url.absoluteString)
+        Method = \(method.value)
+        Headers = \(headers.map { "\($0.key): \($0.value)" }.sorted().joined(separator: ", "))
+        body = \(body?.utf8String(or: "Body is not UTF8 encoded") ?? "Empty body")
+        """
+    }
+}

@@ -31,7 +31,7 @@ public enum BaseError: LocalizedError {
         case .invalidURLString(let urlString):
             return "`\(urlString)` is not a valid URL."
         case .sessionError(let error):
-            return "Session error: \(error)."
+            return "Session error: \(error.localizedDescription)"
         case .noResponse:
             return "Server did not provide a response."
         case .notHttpResponse:
@@ -40,9 +40,10 @@ public enum BaseError: LocalizedError {
             return "HTTP response status code: \(code)"
         case .noData:
             return "Server did not provide data."
-        case .requestBuildingError(let error),
-             .responseConversionError(let error):
-            return error.localizedDescription
+        case .requestBuildingError(let error):
+            return "Request builder error: \(error.localizedDescription)"
+        case .responseConversionError(let error):
+            return "Response converter error: \(error.localizedDescription)"
         }
     }
 }

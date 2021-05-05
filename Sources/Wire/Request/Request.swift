@@ -1,3 +1,6 @@
+#if canImport(Combine)
+import Combine
+#endif
 import Foundation
 
 /// `Request` defines the handling of a networking request, including the generation and modification
@@ -47,6 +50,8 @@ public struct Request<Output> {
     }
 }
 
+// MARK: - Output == Data
+
 extension Request where Output == Data {
     /// Creates a `Request` object that does not perform conversion on the processed data.
     /// - Parameters:
@@ -57,6 +62,8 @@ extension Request where Output == Data {
         self.init(requestBuilder: requestBuilder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in data })
     }
 }
+
+// MARK: - RequestBuildable conformance
 
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
@@ -77,6 +84,8 @@ extension Request: RequestBuildable {
         }
     }
 }
+
+// MARK: - ResponseConvertible conformance
 
 extension Request: ResponseConvertible {
     public func convert(data: Data) -> Result<Output, Error> {
@@ -109,6 +118,8 @@ extension Request: ResponseConvertible {
     }
 }
 
+// MARK: - Convenient methods
+
 extension Request {
     public func retrieveData(
         by client: DataTaskClient = .shared,
@@ -131,8 +142,7 @@ extension Request {
     }
 }
 
-#if canImport(Combine)
-import Combine
+// MARK: - Supporting Combine framework
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
@@ -155,4 +165,3 @@ extension Request {
         .eraseToAnyPublisher()
     }
 }
-#endif
