@@ -5,7 +5,10 @@ extension DataTaskClient {
     /// Asynchronously returns an object obtained via `URLSession`.
     /// - Returns: Value of type `Output` defined in `ResponseConvertible`.
     /// - Throws: Error of type `BaseError`.
-    public func object<T: RequestBuildable, U: ResponseConvertible>(with requestFactory: T, objectConverter: U) async throws -> U.Output {
+    public func object<T: RequestBuildable, U: ResponseConvertible>(
+        with requestFactory: T,
+        objectConverter: U
+    ) async throws -> U.Output {
         let data = try await self.data(with: requestFactory)
 
         switch objectConverter.convert(data: data) {
@@ -18,7 +21,9 @@ extension DataTaskClient {
 
     /// Asynchronously returns a chunk of data obtained via `URLSession`.
     /// - Throws: Error of type `BaseError`.
-    public func data<T: RequestBuildable>(with requestFactory: T) async throws -> Data {
+    public func data<T: RequestBuildable>(
+        with requestFactory: T
+    ) async throws -> Data {
         switch requestFactory.buildRequest() {
         case .failure(let error):
             throw BaseError.requestBuildingError(error)

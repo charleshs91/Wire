@@ -27,10 +27,8 @@ public struct Request<Output> {
         self.requestModifiers = requestModifiers
         self.dataModifiers = dataModifiers
         self.responseConversion = { data in
-            do {
-                return .success(try conversion(data))
-            } catch {
-                return .failure(error)
+            return .mapThrowable {
+                return try conversion(data)
             }
         }
     }
