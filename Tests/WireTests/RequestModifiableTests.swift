@@ -3,7 +3,7 @@ import XCTest
 
 final class RequestModifiableTests: XCTestCase {
     func testInit() {
-        let requestModifier = RequestModifier { req -> Result<URLRequest, Error> in
+        let requestModifier = AnyRequestModifiable { req -> Result<URLRequest, Error> in
             var req = req
             req.httpMethod = HTTPMethod.post.value
             return .success(req)
@@ -16,7 +16,7 @@ final class RequestModifiableTests: XCTestCase {
     }
 
     func testFailure() {
-        let requestModifier = RequestModifier(StubModifier())
+        let requestModifier = AnyRequestModifiable(StubModifier())
         XCTAssertThrowsError(try requestModifier.modify(URLRequest(url: .demo)).get(), "") { error in
             XCTAssertEqual(error as? TestError, .failure)
         }

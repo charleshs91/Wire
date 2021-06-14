@@ -40,9 +40,9 @@ final class RequestTests: XCTestCase {
 
     func testDataModifiers() {
         let request = Request<Data>(
-            requestBuilder: URLRequest(url: .demo),
+            requestFactory: URLRequest(url: .demo),
             requestModifiers: [],
-            dataModifiers: [DataModifier(Base64Modifier())]
+            dataModifiers: [AnyDataModifiable(Base64Modifier())]
         )
 
         TestURLProtocol.setHandler(request: try! request.buildRequest().get()) { req in
@@ -60,10 +60,10 @@ final class RequestTests: XCTestCase {
 
     func testDataConverter() {
         let request = Request<TestCodableObj>(
-            requestBuilder: URLRequest(url: .demo),
+            requestFactory: URLRequest(url: .demo),
             requestModifiers: [],
             dataModifiers: [],
-            dataConverter: JSONConverter<TestCodableObj>()
+            responseConverter: JSONConverter<TestCodableObj>()
         )
         TestURLProtocol.setHandler(request: try! request.buildRequest().get()) { req in
             let objectData = try! JSONEncoder().encode(TestCodableObj.success)
