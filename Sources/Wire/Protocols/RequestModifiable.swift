@@ -26,3 +26,11 @@ extension RequestModifiable {
         request.httpBody = body
     }
 }
+
+extension Data: RequestModifiable {
+    public func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
+        var req = request
+        req.httpBody = self
+        return .success(req)
+    }
+}

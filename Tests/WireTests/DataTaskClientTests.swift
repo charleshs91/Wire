@@ -25,7 +25,8 @@ final class DataTaskClientTests: XCTestCase {
         TestURLProtocol.setHandler(request: URLRequest(url: .noResponse)) { req in
             return (nil, nil, nil)
         }
-        client.retrieveData(requestFactory: Resource(url: .noResponse, method: .get, headers: [], body: nil)) { result in
+        let req = Request<Data>(requestFactory: URL.noResponse, requestModifiers: [HTTPMethod.get])
+        client.retrieveData(requestFactory: req) { result in
             XCTAssertEqual(result.error as? BaseError, .noResponse)
             promise.fulfill()
         }
@@ -39,7 +40,8 @@ final class DataTaskClientTests: XCTestCase {
         TestURLProtocol.setHandler(request: URLRequest(url: .notHTTP)) { req in
             return (nil, urlResponse, nil)
         }
-        client.retrieveData(requestFactory: Resource(url: .notHTTP, method: .get, headers: [], body: nil)) { result in
+        let req = Request<Data>(requestFactory: URL.notHTTP, requestModifiers: [HTTPMethod.get])
+        client.retrieveData(requestFactory: req) { result in
             XCTAssertEqual(result.error as? BaseError, .notHttpResponse(response: urlResponse))
             promise.fulfill()
         }
@@ -52,7 +54,8 @@ final class DataTaskClientTests: XCTestCase {
         TestURLProtocol.setHandler(request: URLRequest(url: .statusCode(401))) { req in
             return (Data(), HTTPURLResponse(url: .statusCode(401), statusCode: 401, httpVersion: nil, headerFields: nil), nil)
         }
-        client.retrieveData(requestFactory: Resource(url: .statusCode(401), method: .get, headers: [], body: nil)) { result in
+        let req = Request<Data>(requestFactory: URL.statusCode(401))
+        client.retrieveData(requestFactory: req) { result in
             XCTAssertEqual(result.error as? BaseError, .httpStatus(code: 401, data: Data()))
             promise.fulfill()
         }
