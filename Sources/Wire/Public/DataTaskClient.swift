@@ -6,18 +6,18 @@ public final class DataTaskClient {
     /// The shared object of `DataTaskClient` that uses `URLSession.shared` as its session.
     public static let shared: DataTaskClient = DataTaskClient()
 
-    internal let session: URLSession
+    let session: URLSession
 
-    private let responseProcessingQueue = DispatchQueue(label: "Wire.DataTaskClient.responseProcessingQueue",
-                                                        qos: .userInteractive,
-                                                        attributes: .concurrent,
-                                                        autoreleaseFrequency: .inherit,
-                                                        target: nil)
-
+    /// Creates a data task client via a session.
+    /// - Parameter session: A session used by the client. If not provided, `URLSession.shared` is used by default.
     public init(session: URLSession = .shared) {
         self.session = session
     }
 
+    /// Creates a data task client via a sesson configuration.
+    /// - Parameters:
+    ///   - configuration: A session configuration.
+    ///   - delegateQueue: An operation queue for scheduling delegate calls and completion handlers.
     public init(configuration: URLSessionConfiguration, delegateQueue: OperationQueue? = nil) {
         self.session = URLSession(configuration: configuration, delegate: nil, delegateQueue: delegateQueue)
     }
@@ -28,10 +28,10 @@ public final class DataTaskClient {
     ///   - completion: A completion handler.
     @discardableResult
     public func retrieveObject<T: RequestBuildable & ResponseConvertible>(
-        request: T,
+        with requestAndResponseProvider: T,
         completion: @escaping Completion<T.Output>
     ) -> URLSessionDataTask? {
-        return retrieveObject(request: request, dataConverter: request, completion: completion)
+        return retrieveObject(requestFactory: requestAndResponseProvider, responseConverter: requestAndResponseProvider, completion: completion)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -41,18 +41,18 @@ public final class DataTaskClient {
     ///   - completion: A completion handler.
     @discardableResult
     public func retrieveObject<T: RequestBuildable, U: ResponseConvertible>(
-        request: T,
-        dataConverter: U,
+        requestFactory: T,
+        responseConverter: U,
         completion: @escaping Completion<U.Output>
     ) -> URLSessionDataTask? {
-        return retrieveData(request: request) { result in
+        return retrieveData(requestFactory: requestFactory) { result in
             switch result {
             case .failure(let error):
                 // data retrieving failure
                 completion(.failure(error))
             case .success(let data):
                 // data retrieving success
-                switch dataConverter.convert(data: data) {
+                switch responseConverter.convert(data: data) {
                 case .failure(let error):
                     // data conversion failure
                     completion(.failure(.responseConversionError(error)))
@@ -69,27 +69,32 @@ public final class DataTaskClient {
     ///   - request: An object that addresses the generation of `URLRequest`.
     ///   - completion: A completion handler.
     @discardableResult
-    public func retrieveData<T: RequestBuildable>(request: T, completion: @escaping Completion<Data>) -> URLSessionDataTask? {
-        switch request.buildRequest() {
+    public func retrieveData<T: RequestBuildable>(
+        requestFactory: T,
+        completion: @escaping Completion<Data>
+    ) -> URLSessionDataTask? {
+        switch requestFactory.buildRequest() {
         case .failure(let error):
             completion(.failure(.requestBuildingError(error)))
             return nil
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { [weak self] data, response, error in
-                // Dispatches response-processing operation to a separate queue
-                self?.responseProcessingQueue.async {
-                    guard let result = self?.process(data: data, response: response, error: error) else { return }
-                    completion(result)
+                guard let result = self?.process(data: data, response: response, error: error) else {
+                    return
                 }
+                completion(result)
             }
-
             dataTask.resume()
+
             return dataTask
         }
     }
+}
 
+// MARK: - Internal
+extension DataTaskClient {
     /// Converts the received result of `session.dataTask(with:completionHandler:)` into a value of `Result<Data, BaseError>`.
-    private func process(data: Data?, response: URLResponse?, error: Error?) -> Result<Data, BaseError> {
+    func process(data: Data?, response: URLResponse?, error: Error?) -> Result<Data, BaseError> {
         if let error = error {
             return .failure(BaseError.sessionError(error))
         }

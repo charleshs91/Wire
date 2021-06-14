@@ -6,68 +6,73 @@ import Foundation
 /// `Request` defines the handling of a networking request, including the generation and modification
 /// of `URLRequest` and transformation of the retrieved data into an `Output`.
 public struct Request<Output> {
-    private let requestBuilder: RequestBuildable
+    private let requestFactory: RequestBuildable
     private let requestModifiers: [RequestModifiable]
     private let dataModifiers: [DataModifiable]
-    private let dataConverter: (Data) throws -> Output
+    private let responseConversion: (Data) -> Result<Output, Error>
 
     /// Creates a `Request` object.
     /// - Parameters:
-    ///   - requestBuilder: The `URLRequest` generating object.
+    ///   - requestFactory: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
     ///   - conversion: The closure which converts the modified data into an `Output`.
     public init(
-        requestBuilder: RequestBuildable,
+        requestFactory: RequestBuildable,
         requestModifiers: [RequestModifiable] = [],
         dataModifiers: [DataModifiable] = [],
         conversion: @escaping (Data) throws -> Output
     ) {
-        self.requestBuilder = requestBuilder
+        self.requestFactory = requestFactory
         self.requestModifiers = requestModifiers
         self.dataModifiers = dataModifiers
-        self.dataConverter = conversion
+        self.responseConversion = { data in
+            do {
+                return .success(try conversion(data))
+            } catch {
+                return .failure(error)
+            }
+        }
     }
 
     /// Creates a `Request` object.
     /// - Parameters:
-    ///   - requestBuilder: The `URLRequest` generating object.
+    ///   - requestFactory: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
-    ///   - dataConverter: A object that converts the modified data into an `Output`.
+    ///   - responseConverter: A object that converts the modified data into an `Output`.
     public init<T: ResponseConvertible>(
-        requestBuilder: RequestBuildable,
+        requestFactory: RequestBuildable,
         requestModifiers: [RequestModifiable] = [],
         dataModifiers: [DataModifiable] = [],
-        dataConverter: T
+        responseConverter: T
     ) where T.Output == Output {
-        self.init(requestBuilder: requestBuilder, requestModifiers: requestModifiers, dataModifiers: dataModifiers) { data in
-            switch dataConverter.convert(data: data) {
-            case .failure(let error): throw error
-            case .success(let output): return output
-            }
+        self.requestFactory = requestFactory
+        self.requestModifiers = requestModifiers
+        self.dataModifiers = dataModifiers
+        self.responseConversion = { data in
+            return responseConverter.convert(data: data)
         }
     }
-}
 
-// MARK: - Output == Data
-
-extension Request where Output == Data {
     /// Creates a `Request` object that does not perform conversion on the processed data.
     /// - Parameters:
-    ///   - requestBuilder: The `URLRequest` generating object.
+    ///   - requestFactory: The `URLRequest` generating object.
     ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
     ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
-    public init(requestBuilder: RequestBuildable, requestModifiers: [RequestModifiable] = [], dataModifiers: [DataModifiable] = []) {
-        self.init(requestBuilder: requestBuilder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in data })
+    public init(
+        requestFactory: RequestBuildable,
+        requestModifiers: [RequestModifiable] = [],
+        dataModifiers: [DataModifiable] = []
+    ) where Output == Data {
+        self.init(requestFactory: requestFactory, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in data })
     }
 }
 
-// MARK: - RequestBuildable conformance
-
+// MARK: - RequestBuildable Conformance
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
-        switch requestBuilder.buildRequest() {
+        switch requestFactory.buildRequest() {
         case .failure(let error):
             return .failure(error)
         case .success(let urlRequest):
@@ -85,20 +90,14 @@ extension Request: RequestBuildable {
     }
 }
 
-// MARK: - ResponseConvertible conformance
-
+// MARK: - ResponseConvertible Conformance
 extension Request: ResponseConvertible {
     public func convert(data: Data) -> Result<Output, Error> {
         switch modifyResponse(data: data) {
         case .failure(let error):
             return .failure(error)
         case .success(let data):
-            do {
-                let output = try dataConverter(data)
-                return .success(output)
-            } catch {
-                return .failure(error)
-            }
+            return responseConversion(data)
         }
     }
 
@@ -118,32 +117,30 @@ extension Request: ResponseConvertible {
     }
 }
 
-// MARK: - Convenient methods
-
+// MARK: - Methods with Closure
 extension Request {
     public func retrieveData(
         by client: DataTaskClient = .shared,
         completion: @escaping (Result<Data, BaseError>) -> Void
     ) {
-        let dataConverter = ResponseConverter { data -> Result<Data, Error> in
+        let dataConverter = AnyResponseConvertible { data -> Result<Data, Error> in
             return modifyResponse(data: data)
         }
-        client.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
+        client.retrieveObject(requestFactory: self, responseConverter: dataConverter, completion: completion)
     }
 
     public func retrieveObject(
         by client: DataTaskClient = .shared,
         completion: @escaping (Result<Output, BaseError>) -> Void
     ) {
-        let dataConverter = ResponseConverter { data -> Result<Output, Error> in
+        let dataConverter = AnyResponseConvertible { data -> Result<Output, Error> in
             return convert(data: data)
         }
-        client.retrieveObject(request: self, dataConverter: dataConverter, completion: completion)
+        client.retrieveObject(requestFactory: self, responseConverter: dataConverter, completion: completion)
     }
 }
 
-// MARK: - Supporting Combine framework
-
+// MARK: - Combine Supports
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
     public func dataPublisher(
@@ -163,5 +160,17 @@ extension Request {
             return retrieveObject(by: client, completion: promise)
         }
         .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Concurrency Supports
+@available(iOS 15.0, tvOS 15.0, watchOS 8.0, OSX 12.0, *)
+extension Request {
+    public func data(using client: DataTaskClient = .shared) async throws -> Data {
+        try await client.data(with: self)
+    }
+
+    public func object(using client: DataTaskClient = .shared) async throws -> Output {
+        try await client.object(with: self, objectConverter: AnyResponseConvertible(transform: responseConversion))
     }
 }

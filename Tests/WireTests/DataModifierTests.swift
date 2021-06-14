@@ -3,7 +3,7 @@ import XCTest
 
 final class DataModifierTests: XCTestCase {
     func testInit() {
-        let dataModifier = DataModifier { data -> Result<Data, Error> in
+        let dataModifier = AnyDataModifiable { data -> Result<Data, Error> in
             return .success("Modified".data(using: .utf8) ?? Data())
         }
         let data = try? dataModifier.modify(Data()).get()
@@ -12,7 +12,7 @@ final class DataModifierTests: XCTestCase {
     }
 
     func testFailure() {
-        let dataModifier = DataModifier(StubModifier())
+        let dataModifier = AnyDataModifiable(StubModifier())
         XCTAssertThrowsError(try dataModifier.modify(Data()).get(), "") { error in
             XCTAssertEqual(error as? TestError, .failure)
         }
