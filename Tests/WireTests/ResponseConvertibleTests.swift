@@ -2,25 +2,30 @@ import XCTest
 @testable import Wire
 
 final class ResponseConvertibleTests: XCTestCase {
-    func testClosureInit() {
-        let converter = AnyResponseConvertible<String> { data -> Result<String, Error> in
-            let aString = String(data: data, encoding: .utf8)!
+    func testInit() throws {
+        let converter = AnyResponseConvertible<String> { data in
+            let aString = String(data: data, encoding: .utf8) ?? ""
             return .success(aString)
         }
-        let data = try? converter.convert(data: #function.data(using: .utf8) ?? Data()).get()
-        XCTAssertNotNil(data)
-        XCTAssertEqual(data, #function)
+        let payload = #function.data(using: .utf8) ?? Data()
+        let string = try converter.convert(data: payload).get()
+
+        XCTAssertEqual(string, #function)
     }
 
-    func testGenericInit() {
+    func testSuccess() throws {
         let converter = AnyResponseConvertible(StringIntConverter())
-        let value = try? converter.convert(data: "100".data(using: .utf8) ?? Data()).get()
-        XCTAssertEqual(value, 100)
+        let payload = "100".data(using: .utf8) ?? Data()
+        let number = try converter.convert(data: payload).get()
+
+        XCTAssertEqual(number, 100)
     }
 
     func testFailure() {
         let converter = AnyResponseConvertible(StringIntConverter())
-        XCTAssertThrowsError(try converter.convert(data: #function.data(using: .utf8) ?? Data()).get(), "") { error in
+        let payload = #function.data(using: .utf8) ?? Data()
+
+        XCTAssertThrowsError(try converter.convert(data: payload).get(), "") { error in
             XCTAssertEqual(error as? TestError, .failure)
         }
     }

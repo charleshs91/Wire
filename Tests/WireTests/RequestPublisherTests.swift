@@ -22,7 +22,7 @@ final class RequestPublisherTests: XCTestCase {
 
         let promise = expectation(description: #function)
         let request = Request<Data>(requestFactory: URL.demo, requestModifiers: [HTTPMethod.get])
-        request.dataPublisher(client: client)
+        request.dataPublisher(using: client)
             .sink(receiveCompletion: { _ in }) { data in
                 XCTAssertEqual(data.utf8String(or: ""), "OK")
                 promise.fulfill()
@@ -40,7 +40,7 @@ final class RequestPublisherTests: XCTestCase {
 
         let promise = expectation(description: #function)
         let request = Request<TestCodableObj>(requestFactory: URL.demo, requestModifiers: [HTTPMethod.get], responseConverter: JSONConverter())
-        request.objectPublisher(client: client)
+        request.objectPublisher(using: client)
             .sink(receiveCompletion: { _ in }) { object in
                 XCTAssertEqual(object.description, TestCodableObj.success.description)
                 promise.fulfill()

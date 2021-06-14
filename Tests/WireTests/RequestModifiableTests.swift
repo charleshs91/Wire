@@ -2,48 +2,52 @@ import XCTest
 @testable import Wire
 
 final class RequestModifiableTests: XCTestCase {
-    func testInit() {
-        let requestModifier = AnyRequestModifiable { req -> Result<URLRequest, Error> in
+    func testSuccess() throws {
+        let requestModifier = AnyRequestModifiable { req in
             var req = req
             req.httpMethod = HTTPMethod.post.value
             return .success(req)
         }
-        let origRequest = URLRequest(url: .demo)
-        let newRequest = try? requestModifier.modify(origRequest).get()
-        XCTAssertEqual(origRequest.url, newRequest?.url)
-        XCTAssertEqual(origRequest.httpMethod, "GET")
-        XCTAssertEqual(newRequest?.httpMethod, "POST")
+        let origReq = URLRequest(url: .demo)
+        let newReq = try requestModifier.modify(origReq).get()
+
+        XCTAssertEqual(origReq.url, newReq.url)
+        XCTAssertEqual(origReq.httpMethod, "GET")
+        XCTAssertEqual(newReq.httpMethod, "POST")
     }
 
     func testFailure() {
-        let requestModifier = AnyRequestModifiable(StubModifier())
+        let requestModifier = AnyRequestModifiable(FailureModifier())
+
         XCTAssertThrowsError(try requestModifier.modify(URLRequest(url: .demo)).get(), "") { error in
             XCTAssertEqual(error as? TestError, .failure)
         }
     }
 
-    func testSetHeaders() {
-        let modifier = RequestHeaderModifier(headers: ["Foo": "Bar"])
-        let origRequest = URLRequest(url: .demo)
-        let newRequest = try? modifier.modify(origRequest).get()
-        XCTAssertEqual(newRequest?.allHTTPHeaderFields, ["Foo": "Bar"])
+    func testSetHeaders() throws {
+        let modifier = SetHeaderModifier(headers: ["Foo": "Bar"])
+        let origReq = URLRequest(url: .demo)
+        let newReq = try modifier.modify(origReq).get()
+
+        XCTAssertEqual(newReq.allHTTPHeaderFields, ["Foo": "Bar"])
     }
 
-    func testSetBody() {
-        let modifier = RequestBodyModifier(body: .demo)
-        let origRequest = URLRequest(url: .demo)
-        let newRequest = try? modifier.modify(origRequest).get()
-        XCTAssertEqual(newRequest?.httpBody, .demo)
+    func testSetBody() throws {
+        let modifier = SetBodyModifier(body: .demo)
+        let origReq = URLRequest(url: .demo)
+        let newReq = try modifier.modify(origReq).get()
+
+        XCTAssertEqual(newReq.httpBody, .demo)
     }
 }
 
-private struct StubModifier: RequestModifiable {
+private struct FailureModifier: RequestModifiable {
     func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
         return .failure(TestError.failure)
     }
 }
 
-private struct RequestHeaderModifier: RequestModifiable {
+private struct SetHeaderModifier: RequestModifiable {
     let headers: [String: String]
 
     func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
@@ -53,7 +57,7 @@ private struct RequestHeaderModifier: RequestModifiable {
     }
 }
 
-private struct RequestBodyModifier: RequestModifiable {
+private struct SetBodyModifier: RequestModifiable {
     let body: Data?
 
     func modify(_ request: URLRequest) -> Result<URLRequest, Error> {

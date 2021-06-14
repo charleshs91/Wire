@@ -26,7 +26,7 @@ final class DataTaskClientTests: XCTestCase {
             return (nil, nil, nil)
         }
         let req = Request<Data>(requestFactory: URL.noResponse, requestModifiers: [HTTPMethod.get])
-        client.retrieveData(requestFactory: req) { result in
+        client.retrieveData(with: req) { result in
             XCTAssertEqual(result.error as? BaseError, .noResponse)
             promise.fulfill()
         }
@@ -41,7 +41,7 @@ final class DataTaskClientTests: XCTestCase {
             return (nil, urlResponse, nil)
         }
         let req = Request<Data>(requestFactory: URL.notHTTP, requestModifiers: [HTTPMethod.get])
-        client.retrieveData(requestFactory: req) { result in
+        client.retrieveData(with: req) { result in
             XCTAssertEqual(result.error as? BaseError, .notHttpResponse(response: urlResponse))
             promise.fulfill()
         }
@@ -55,7 +55,7 @@ final class DataTaskClientTests: XCTestCase {
             return (Data(), HTTPURLResponse(url: .statusCode(401), statusCode: 401, httpVersion: nil, headerFields: nil), nil)
         }
         let req = Request<Data>(requestFactory: URL.statusCode(401))
-        client.retrieveData(requestFactory: req) { result in
+        client.retrieveData(with: req) { result in
             XCTAssertEqual(result.error as? BaseError, .httpStatus(code: 401, data: Data()))
             promise.fulfill()
         }

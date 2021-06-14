@@ -31,7 +31,7 @@ public final class DataTaskClient {
         with requestAndResponseProvider: T,
         completion: @escaping Completion<T.Output>
     ) -> URLSessionDataTask? {
-        return retrieveObject(requestFactory: requestAndResponseProvider, responseConverter: requestAndResponseProvider, completion: completion)
+        return retrieveObject(with: requestAndResponseProvider, responseConverter: requestAndResponseProvider, completion: completion)
     }
 
     /// Retrieves the contents of a request, transforms the obtained data into a specific object, and calls a handler upon completion.
@@ -41,11 +41,11 @@ public final class DataTaskClient {
     ///   - completion: A completion handler.
     @discardableResult
     public func retrieveObject<T: RequestBuildable, U: ResponseConvertible>(
-        requestFactory: T,
+        with requestFactory: T,
         responseConverter: U,
         completion: @escaping Completion<U.Output>
     ) -> URLSessionDataTask? {
-        return retrieveData(requestFactory: requestFactory) { result in
+        return retrieveData(with: requestFactory) { result in
             switch result {
             case .failure(let error):
                 // data retrieving failure
@@ -70,7 +70,7 @@ public final class DataTaskClient {
     ///   - completion: A completion handler.
     @discardableResult
     public func retrieveData<T: RequestBuildable>(
-        requestFactory: T,
+        with requestFactory: T,
         completion: @escaping Completion<Data>
     ) -> URLSessionDataTask? {
         switch requestFactory.buildRequest() {
@@ -79,10 +79,10 @@ public final class DataTaskClient {
             return nil
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { [weak self] data, response, error in
-                guard let result = self?.process(data: data, response: response, error: error) else {
-                    return
+                guard let self = self else {
+                    return assertionFailure("Client being released before the completion cllback of its data task.")
                 }
-                completion(result)
+                completion(self.process(data: data, response: response, error: error))
             }
             dataTask.resume()
 

@@ -8,8 +8,8 @@ extension DataTaskClient {
         with requestFactory: T,
         responseConverter: U
     ) -> AnyPublisher<U.Output, BaseError> {
-        return Future { [weak self] promise in
-            self?.retrieveObject(requestFactory: requestFactory, responseConverter: responseConverter, completion: promise)
+        return Future { [unowned self] promise in
+            retrieveObject(with: requestFactory, responseConverter: responseConverter, completion: promise)
         }
         .eraseToAnyPublisher()
     }
@@ -17,8 +17,8 @@ extension DataTaskClient {
     public func objectPublisher<T: RequestBuildable & ResponseConvertible>(
         with requestAndResponseProvider: T
     ) -> AnyPublisher<T.Output, BaseError> {
-        return Future { [weak self] promise in
-            self?.retrieveObject(with: requestAndResponseProvider, completion: promise)
+        return Future { [unowned self] promise in
+            retrieveObject(with: requestAndResponseProvider, completion: promise)
         }
         .eraseToAnyPublisher()
     }
@@ -26,8 +26,8 @@ extension DataTaskClient {
     public func dataPublisher<T: RequestBuildable>(
         with requestFactory: T
     ) -> AnyPublisher<Data, BaseError> {
-        return Future { [weak self] promise in
-            self?.retrieveData(requestFactory: requestFactory, completion: promise)
+        return Future { [unowned self] promise in
+            retrieveData(with: requestFactory, completion: promise)
         }
         .eraseToAnyPublisher()
     }

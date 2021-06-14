@@ -73,17 +73,20 @@ extension Request: RequestBuildable {
         switch requestFactory.buildRequest() {
         case .failure(let error):
             return .failure(error)
-        case .success(let urlRequest):
-            var outputRequest = urlRequest
+        case .success(let request):
+            var buffer = request
 
             for modifier in requestModifiers {
-                switch modifier.modify(outputRequest) {
-                case .failure(let error): return .failure(error)
-                case .success(let req): outputRequest = req
+                switch modifier.modify(buffer) {
+                case .failure(let error):
+                    // Early return
+                    return .failure(error)
+                case .success(let req):
+                    buffer = req
                 }
             }
             // Return the original URLRequest if `requestModifiers` is empty.
-            return .success(outputRequest)
+            return .success(buffer)
         }
     }
 }
@@ -91,7 +94,7 @@ extension Request: RequestBuildable {
 // MARK: - ResponseConvertible Conformance
 extension Request: ResponseConvertible {
     public func convert(data: Data) -> Result<Output, Error> {
-        switch modifyResponse(data: data) {
+        switch modify(data: data) {
         case .failure(let error):
             return .failure(error)
         case .success(let data):
@@ -99,63 +102,58 @@ extension Request: ResponseConvertible {
         }
     }
 
-    private func modifyResponse(data: Data) -> Result<Data, Error> {
-        var outputData = data
+    private func modify(data: Data) -> Result<Data, Error> {
+        var buffer = data
 
         for modifier in dataModifiers {
-            switch modifier.modify(outputData) {
+            switch modifier.modify(buffer) {
             case .failure(let error):
+                // Early return
                 return .failure(error)
             case .success(let data):
-                outputData = data
+                buffer = data
             }
         }
         // Return the original data if `responseModifiers` is empty.
-        return .success(outputData)
+        return .success(buffer)
     }
 }
 
 // MARK: - Methods with Closure
 extension Request {
     public func retrieveData(
-        by client: DataTaskClient = .shared,
+        using client: DataTaskClient = .shared,
         completion: @escaping (Result<Data, BaseError>) -> Void
     ) {
-        let dataConverter = AnyResponseConvertible { data -> Result<Data, Error> in
-            return modifyResponse(data: data)
+        let dataConverter = AnyResponseConvertible { data in
+            return modify(data: data)
         }
-        client.retrieveObject(requestFactory: self, responseConverter: dataConverter, completion: completion)
+        client.retrieveObject(with: self, responseConverter: dataConverter, completion: completion)
     }
 
     public func retrieveObject(
-        by client: DataTaskClient = .shared,
+        using client: DataTaskClient = .shared,
         completion: @escaping (Result<Output, BaseError>) -> Void
     ) {
-        let dataConverter = AnyResponseConvertible { data -> Result<Output, Error> in
-            return convert(data: data)
-        }
-        client.retrieveObject(requestFactory: self, responseConverter: dataConverter, completion: completion)
+        client.retrieveObject(with: self, completion: completion)
     }
 }
 
 // MARK: - Combine Supports
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
-    public func dataPublisher(client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
-        return Future<Data, BaseError> { promise in
-            retrieveData(by: client, completion: promise)
-        }
-        .eraseToAnyPublisher()
+    public func dataPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
+        return client.objectPublisher(with: self, responseConverter: AnyResponseConvertible { data in
+            return modify(data: data)
+        })
     }
 
-    public func objectPublisher(client: DataTaskClient = .shared) -> AnyPublisher<Output, BaseError> {
-        return Future<Output, BaseError> { promise in
-            retrieveObject(by: client, completion: promise)
-        }
-        .eraseToAnyPublisher()
+    public func objectPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Output, BaseError> {
+        return client.objectPublisher(with: self)
     }
 }
 
+#if swift(>=5.5)
 // MARK: - Concurrency Supports
 @available(iOS 15.0, tvOS 15.0, watchOS 8.0, OSX 12.0, *)
 extension Request {
@@ -167,3 +165,4 @@ extension Request {
         try await client.object(with: self, objectConverter: AnyResponseConvertible(transform: responseConversion))
     }
 }
+#endif
