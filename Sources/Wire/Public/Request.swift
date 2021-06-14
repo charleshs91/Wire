@@ -141,21 +141,16 @@ extension Request {
 // MARK: - Combine Supports
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
-    public func dataPublisher(
-        client: DataTaskClient = .shared
-    ) -> AnyPublisher<Data, BaseError> {
+    public func dataPublisher(client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
         return Future<Data, BaseError> { promise in
-            return retrieveData(by: client, completion: promise)
+            retrieveData(by: client, completion: promise)
         }
         .eraseToAnyPublisher()
     }
 
-    public func objectPublisher(
-        client: DataTaskClient = .shared,
-        using decoder: JSONDecoder = JSONDecoder()
-    ) -> AnyPublisher<Output, BaseError> {
+    public func objectPublisher(client: DataTaskClient = .shared) -> AnyPublisher<Output, BaseError> {
         return Future<Output, BaseError> { promise in
-            return retrieveObject(by: client, completion: promise)
+            retrieveObject(by: client, completion: promise)
         }
         .eraseToAnyPublisher()
     }
