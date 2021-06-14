@@ -18,21 +18,24 @@ public struct Resource {
 
     /// Creates a resource with a path represented by a string.
     /// - Parameters:
-    ///   - urlString: The URL string of the resource.
-    ///   - method: HTTP method for the resource. `.get` by default
-    ///   - headers: Header fields for the resource. Empty by default.
-    ///   - body: Body of the URLRequest. `nil` by default.
+    ///   - urlString: A string representing the URI to a fetchable resource.
+    ///   - method: The ``HTTPMethod`` for the resource. (`.get` by default)
+    ///   - headers: A list of ``HTTPHeader`` representing header fields for the resource. (Empty by default)
+    ///   - body: Body of the URLRequest. (`nil` by default)
     public init?(urlString: String, method: HTTPMethod = .get, headers: [HTTPHeader] = [], body: Data? = nil) {
-        guard let url = URL(string: urlString) else { return nil }
+        guard let url = URL(string: urlString) else {
+            return nil
+        }
+
         self = Resource(url: url, method: method, headers: headers, body: body)
     }
 
     /// Creates a resource that represents a `URLRequest`.
     /// - Parameters:
-    ///   - url: `URL` of the resource.
-    ///   - method: HTTP method for the resource. `.get` by default
-    ///   - headers: Header fields for the resource. Empty by default.
-    ///   - body: Body of the URLRequest. `nil` by default.
+    ///   - url: A `URL` value indicating a fetchable resource.
+    ///   - method: The ``HTTPMethod`` for the resource. (`.get` by default)
+    ///   - headers: A list of ``HTTPHeader`` representing header fields for the resource. (Empty by default)
+    ///   - body: Body of the URLRequest. (`nil` by default)
     public init(url: URL, method: HTTPMethod = .get, headers: [HTTPHeader] = [], body: Data? = nil) {
         self.url = url
         self.headers = headers
@@ -41,59 +44,75 @@ public struct Resource {
     }
 }
 
-// MARK: - RequestBuildable conformance
-
+// MARK: - RequestBuildable Conformance
 extension Resource: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = method.value
-        headers.forEach { $0.modify(request: &urlRequest) }
+        headers.forEach { item in
+            item.modify(request: &urlRequest)
+        }
         urlRequest.httpBody = body
         return .success(urlRequest)
     }
 }
 
-// MARK: - Convenient methods
-
+// MARK: - Methods with Closure
 extension Resource {
     public func retrieveData(
-        by client: DataTaskClient = .shared,
+        using client: DataTaskClient = .shared,
         completion: @escaping (Result<Data, BaseError>) -> Void
     ) {
-        client.retrieveData(request: self, completion: completion)
+        client.retrieveData(requestFactory: self, completion: completion)
     }
 
     public func retrieveObject<T: Decodable>(
-        by client: DataTaskClient = .shared,
+        using client: DataTaskClient = .shared,
         asType: T.Type = T.self,
-        using decoder: JSONDecoder = JSONDecoder(),
+        decoder: JSONDecoder = JSONDecoder(),
         completion: @escaping (Result<T, BaseError>) -> Void
     ) {
-        client.retrieveObject(request: self, dataConverter: JSONConverter<T>(decoder: decoder), completion: completion)
+        client.retrieveObject(requestFactory: self, responseConverter: JSONConverter<T>(decoder: decoder), completion: completion)
     }
 }
 
-// MARK: - Supporting Combine framework
-
+// MARK: - Combine Supports
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Resource {
     public func dataPublisher(
-        client: DataTaskClient = .shared
+        using client: DataTaskClient = .shared
     ) -> AnyPublisher<Data, BaseError> {
-        return client.dataPublisher(request: self)
+        return client.dataPublisher(with: self)
     }
 
     public func objectPublisher<T: Decodable>(
-        client: DataTaskClient = .shared,
+        using client: DataTaskClient = .shared,
         asType: T.Type = T.self,
-        using decoder: JSONDecoder = JSONDecoder()
+        decoder: JSONDecoder = JSONDecoder()
     ) -> AnyPublisher<T, BaseError> {
-        return client.objectPublisher(request: self, dataConverter: JSONConverter<T>(decoder: decoder))
+        return client.objectPublisher(with: self, responseConverter: JSONConverter<T>(decoder: decoder))
+    }
+}
+
+// MARK: - Concurrency Supports
+@available(iOS 15.0, tvOS 15.0, watchOS 8.0, OSX 12.0, *)
+extension Resource {
+    public func data(
+        using client: DataTaskClient = .shared
+    ) async throws -> Data {
+        return try await client.data(with: self)
+    }
+
+    public func object<T: Decodable>(
+        using client: DataTaskClient = .shared,
+        asType: T.Type = T.self,
+        decoder: JSONDecoder = JSONDecoder()
+    ) async throws -> T {
+        return try await client.object(with: self, objectConverter: JSONConverter<T>(decoder: decoder))
     }
 }
 
 // MARK: - Debugging
-
 extension Resource: CustomDebugStringConvertible {
     public var debugDescription: String {
         return """
