@@ -1,9 +1,9 @@
 import XCTest
 @testable import Wire
 
-final class ResponseConverterTests: XCTestCase {
+final class ResponseConvertibleTests: XCTestCase {
     func testClosureInit() {
-        let converter = ResponseConverter<String> { data -> Result<String, Error> in
+        let converter = AnyResponseConvertible<String> { data -> Result<String, Error> in
             let aString = String(data: data, encoding: .utf8)!
             return .success(aString)
         }
@@ -13,13 +13,13 @@ final class ResponseConverterTests: XCTestCase {
     }
 
     func testGenericInit() {
-        let converter = ResponseConverter(StringIntConverter())
+        let converter = AnyResponseConvertible(StringIntConverter())
         let value = try? converter.convert(data: "100".data(using: .utf8) ?? Data()).get()
         XCTAssertEqual(value, 100)
     }
 
     func testFailure() {
-        let converter = ResponseConverter(StringIntConverter())
+        let converter = AnyResponseConvertible(StringIntConverter())
         XCTAssertThrowsError(try converter.convert(data: #function.data(using: .utf8) ?? Data()).get(), "") { error in
             XCTAssertEqual(error as? TestError, .failure)
         }

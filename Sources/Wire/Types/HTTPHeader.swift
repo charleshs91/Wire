@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a HTTP header field.
-public enum HTTPHeader: RequestModifiable {
+public enum HTTPHeader {
     case accept(ContentType)
     case acceptCharset(String)
     case acceptEncoding(String)
@@ -75,14 +75,82 @@ public enum HTTPHeader: RequestModifiable {
         }
     }
 
+    /// Modifies a URLRequest to apply this header.
+    /// - Parameters:
+    ///   - request: The request to apply headers to
+    ///   - mergesField: Determines if the content gets merged to the same field. It defaults to `true`.
+    func modify(request: inout URLRequest, mergesField: Bool = true) {
+        if mergesField {
+            request.addValue(value, forHTTPHeaderField: key)
+        } else {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+    }
+}
+
+extension HTTPHeader: RequestModifiable {
     public func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
         var req = request
         modify(request: &req)
         return .success(req)
     }
+}
 
-    /// Modifies a URLRequest to apply this header.
-    internal func modify(request: inout URLRequest) {
-        request.setValue(value, forHTTPHeaderField: key)
+// MARK: - Authorization
+extension HTTPHeader {
+    /// Represents content of the `Authorization` HTTP header field.
+    public enum Authorization {
+        case basic(_ token: String)
+        case bearer(_ token: String)
+        case digest(_ token: String)
+        case HOBA(_ token: String)
+        case mutual(_ token: String)
+        case other(String)
+
+        /// The value for the `Authorization` field in a header.
+        public var value: String {
+            switch self {
+            case .basic(let token):
+                return "Basic \(token)"
+            case .bearer(let token):
+                return "Bearer \(token)"
+            case .digest(let token):
+                return "Digest \(token)"
+            case .HOBA(let token):
+                return "HOBA \(token)"
+            case .mutual(let token):
+                return "Mutual \(token)"
+            case .other(let value):
+                return value
+            }
+        }
+    }
+}
+
+// MARK: - Content-Type
+extension HTTPHeader {
+    /// Represents content of the `Content-Type` HTTP header field.
+    public enum ContentType {
+        case formData
+        case urlEncodedForm
+        case json
+        case plain
+        case other(String)
+
+        /// The value for the `Content-Type` field in a header.
+        public var value: String {
+            switch self {
+            case .formData:
+                return "multipart/form-data"
+            case .urlEncodedForm:
+                return "application/x-www-form-urlencoded;charset=utf-8"
+            case .json:
+                return "application/json;charset=utf-8"
+            case .plain:
+                return "text/plain;charset=utf-8"
+            case .other(let value):
+                return value
+            }
+        }
     }
 }

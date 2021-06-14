@@ -9,11 +9,8 @@ public struct JSONConverter<T: Decodable>: ResponseConvertible {
     }
 
     public func convert(data: Data) -> Result<T, Error> {
-        do {
-            let output = try decoder.decode(T.self, from: data)
-            return .success(output)
-        } catch {
-            return .failure(error)
+        return .mapThrowable {
+            return try decoder.decode(T.self, from: data)
         }
     }
 }
