@@ -9,7 +9,7 @@ final class RequestTests: XCTestCase {
     }
 
     func testRequestBuildable() throws {
-        let request = Request<Data>(requestFactory: URLRequest(url: .demo))
+        let request = Request<Data>(builder: URLRequest(url: .demo))
         let urlRequest = try request.buildRequest().get()
 
         XCTAssertEqual(urlRequest.url, URL.demo)
@@ -17,13 +17,14 @@ final class RequestTests: XCTestCase {
 
     func testRequestModifiers() throws {
         let request = Request<Data>(
-            requestFactory: URLRequest(url: .demo),
+            builder: URLRequest(url: .demo),
             requestModifiers: [
                 AnyRequestModifiable { req in
                     var req = req
                     req.httpMethod = "PUT"
                     return .success(req)
                 },
+                ContentType.plainText,
                 AnyRequestModifiable { req in
                     var req = req
                     req.httpBody = #function.data(using: .utf8)
@@ -34,12 +35,13 @@ final class RequestTests: XCTestCase {
         let urlRequest = try request.buildRequest().get()
 
         XCTAssertEqual(urlRequest.httpMethod, "PUT")
+        XCTAssertEqual(urlRequest.value(forHTTPHeaderField: ContentType.plainText.key), ContentType.plainText.value)
         XCTAssertEqual(urlRequest.httpBody, #function.data(using: .utf8))
     }
 
     func testDataModifiers() throws {
         let request = Request<Data>(
-            requestFactory: URLRequest(url: .demo),
+            builder: URLRequest(url: .demo),
             dataModifiers: [AnyDataModifiable(Base64Modifier())]
         )
         let payload = "OK".data(using: .utf8)
@@ -59,8 +61,8 @@ final class RequestTests: XCTestCase {
 
     func testDataConverter() throws {
         let request = Request<TestCodableObj>(
-            requestFactory: URLRequest(url: .demo),
-            responseConverter: JSONConverter<TestCodableObj>()
+            builder: URLRequest(url: .demo),
+            responseConverter: JSONDecodingConverter<TestCodableObj>()
         )
 
         TestURLProtocol.setHandler(request: try request.buildRequest().get()) { req in

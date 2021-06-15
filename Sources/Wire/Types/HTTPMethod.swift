@@ -1,11 +1,11 @@
 import Foundation
 
 /// Represents a HTTP method.
-public struct HTTPMethod {
-    public let value: String
+public struct HTTPMethod: RequestMethod {
+    public let method: String
 
     public init(value: String) {
-        self.value = value
+        self.method = value
     }
 }
 
@@ -19,12 +19,4 @@ extension HTTPMethod {
     public static let options: HTTPMethod = HTTPMethod(value: "OPTIONS")
     public static let trace: HTTPMethod = HTTPMethod(value: "TRACE")
     public static let patch: HTTPMethod = HTTPMethod(value: "PATCH")
-}
-
-extension HTTPMethod: RequestModifiable {
-    public func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
-        var req = request
-        req.httpMethod = value
-        return .success(req)
-    }
 }

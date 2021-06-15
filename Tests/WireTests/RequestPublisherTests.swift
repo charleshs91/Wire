@@ -21,7 +21,7 @@ final class RequestPublisherTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        let request = Request<Data>(requestFactory: URL.demo, requestModifiers: [HTTPMethod.get])
+        let request = Request<Data>(builder: URL.demo, requestModifiers: [HTTPMethod.get])
         request.dataPublisher(using: client)
             .sink(receiveCompletion: { _ in }) { data in
                 XCTAssertEqual(data.utf8String(or: ""), "OK")
@@ -39,7 +39,7 @@ final class RequestPublisherTests: XCTestCase {
         }
 
         let promise = expectation(description: #function)
-        let request = Request<TestCodableObj>(requestFactory: URL.demo, requestModifiers: [HTTPMethod.get], responseConverter: JSONConverter())
+        let request = Request<TestCodableObj>(builder: URL.demo, requestModifiers: [HTTPMethod.get], responseConverter: JSONDecodingConverter())
         request.objectPublisher(using: client)
             .sink(receiveCompletion: { _ in }) { object in
                 XCTAssertEqual(object.description, TestCodableObj.success.description)

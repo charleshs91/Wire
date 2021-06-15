@@ -1,11 +1,12 @@
 import Foundation
 
-/// Capable of converting `Data` into a generic `Output` value.
+/// Defines the `convert(data:)` method that takes a chunk of data as an input and
+/// outputs a failable result wrapping the transformed value of type `Output`.
 public protocol ResponseConvertible {
-    /// Type of the converted result.
+    /// The type which the input data is transformed to.
     associatedtype Output
 
-    /// Converts `Data` into `Output`.
+    /// Transforms a chunk of data into a value typed `Output` and returns as a failable result.
     /// - Parameter data: The data to be converted.
     func convert(data: Data) -> Result<Output, Error>
 }
