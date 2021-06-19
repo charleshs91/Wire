@@ -34,10 +34,10 @@ public struct URLEncodedQueryModifier: RequestModifiable {
 
         switch destination {
         case .queryString:
-            return .mapThrowable {
+            return .init(catching: {
                 try adaptQueryString(to: &req)
                 return req
-            }
+            })
         case .httpBody:
             adaptHttpBody(to: &req)
             return .success(req)

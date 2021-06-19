@@ -48,9 +48,9 @@ public struct Request<Output> {
         conversion: @escaping (Data) throws -> Output
     ) {
         self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in
-            return .mapThrowable {
+            return .init(catching: {
                 return try conversion(data)
-            }
+            })
         })
     }
 

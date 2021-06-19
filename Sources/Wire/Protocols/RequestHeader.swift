@@ -13,7 +13,6 @@ extension RequestHeader {
         : req.setValue(value, forHTTPHeaderField: key)
     }
 
-    // MARK: RequestModifiable Impl
     public func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
         var req = request
         apply(to: &req)

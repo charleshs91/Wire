@@ -6,6 +6,8 @@ public final class DataTaskClient {
     /// The shared object of `DataTaskClient` that uses `URLSession.shared` as its session.
     public static let shared: DataTaskClient = DataTaskClient()
 
+    public weak var monitor: ClientMonitorable?
+
     let session: URLSession
 
     /// Creates a data task client via a session.
@@ -68,11 +70,20 @@ public final class DataTaskClient {
         case .success(let urlRequest):
             let dataTask = session.dataTask(with: urlRequest) { [weak self] data, response, error in
                 guard let self = self else {
-                    return assertionFailure("Client being released before the completion cllback of its data task.")
+                    return assertionFailure("Client is released before the completion callback of its data task.")
                 }
+
+                let result = self.process(data: data, response: response, error: error)
+
+                if let data = try? result.get() {
+                    self.monitor?.client(self, didSucceedWith: data, requestBuilder: builder)
+                }
+
                 completion(self.process(data: data, response: response, error: error))
             }
+
             dataTask.resume()
+            monitor?.client(self, didExecute: builder)
 
             return dataTask
         }
@@ -101,10 +112,9 @@ public final class DataTaskClient {
     }
 }
 
-// MARK: - PerformerError
 extension DataTaskClient {
-    public enum PerformerError: LocalizedError, Equatable {
-        /// Error from `URLSession`. The `error` is ignored upon evaluating equality.
+    public enum PerformError: LocalizedError {
+        /// `URLError` from `URLSession`. The `error` is ignored upon evaluating equality.
         case sessionError(_ error: Error)
         /// No response from server
         case noResponse
@@ -115,33 +125,38 @@ extension DataTaskClient {
         /// The response (200 OK) does not contain data.
         case noData
 
-        public static func ==(lhs: Self, rhs: Self) -> Bool {
-            switch (lhs, rhs) {
-            case (.sessionError, .sessionError),
-                (.noResponse, .noResponse),
-                (.notHttpResponse, .notHttpResponse),
-                (.noData, .noData):
-                return true
-            case (.httpStatus(let codeLeft, _), .httpStatus(let codeRight, _)):
-                return codeLeft == codeRight
-            default:
-                return false
-            }
-        }
-
         public var errorDescription: String? {
             switch self {
             case .sessionError(let error):
-                return "Session error: \(error.localizedDescription)"
+                return "URLError: \(error.localizedDescription)"
             case .noResponse:
                 return "Server did not provide a response."
-            case .notHttpResponse:
-                return "Response is not HTTP."
-            case .httpStatus(let code, _):
-                return "HTTP response status code: \(code)"
+            case .notHttpResponse(let response):
+                return "Not HTTP: \(response)."
+            case .httpStatus(let code, let data):
+                return """
+                "HTTP response status code: \(code), with data:\"
+                "\(data.orEmpty.utf8String(or: "* Content Not UTF-8 *"))\"
+                """
             case .noData:
                 return "Server did not provide data."
             }
+        }
+    }
+}
+
+extension DataTaskClient.PerformError: Equatable {
+    public static func ==(lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.httpStatus(let lc, let ld), .httpStatus(let rc, let rd)):
+            return lc == rc && ld == rd
+        case (.sessionError, .sessionError),
+            (.noResponse, .noResponse),
+            (.notHttpResponse, .notHttpResponse),
+            (.noData, .noData):
+            return true
+        default:
+            return false
         }
     }
 }

@@ -17,11 +17,11 @@ public struct PlainTextBodyModifier: RequestModifiable {
     }
 
     public func modify(_ request: URLRequest) -> Result<URLRequest, Swift.Error> {
-        return .mapThrowable {
+        return .init(catching: {
             var req = request
             ContentType.plainText.apply(to: &req)
             req.httpBody = try encode()
             return req
-        }
+        })
     }
 }

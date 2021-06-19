@@ -11,8 +11,8 @@ public struct JSONDecodingConverter<Output: Decodable>: ResponseConvertible {
     }
 
     public func convert(data: Data) -> Result<Output, Error> {
-        return .mapThrowable {
+        return .init(catching: {
             return try decode(data)
-        }
+        })
     }
 }
