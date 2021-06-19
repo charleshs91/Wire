@@ -5,3 +5,9 @@ extension Data {
         return String(data: self, encoding: .utf8) ?? fallback
     }
 }
+
+extension Optional where Wrapped == Data {
+    var orEmpty: Wrapped {
+        self ?? Data()
+    }
+}
