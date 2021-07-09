@@ -29,7 +29,7 @@ final class DataTaskClientTests: XCTestCase {
 
         let req = Request<Data>(builder: URL.noResponse, requestModifiers: [HTTPMethod.get])
         client.retrieveData(with: req) { result in
-            XCTAssertEqual(result.error as? BaseError, .performError(.noResponse))
+            XCTAssertEqual(result.error as? BaseError, .dataTaskPerformer(.noResponse))
             promise.fulfill()
         }
 
@@ -46,7 +46,7 @@ final class DataTaskClientTests: XCTestCase {
 
         let req = Request<Data>(builder: URL.notHTTP, requestModifiers: [HTTPMethod.get])
         client.retrieveData(with: req) { result in
-            XCTAssertEqual(result.error as? BaseError, .performError(.notHttpResponse(response: urlResponse)))
+            XCTAssertEqual(result.error as? BaseError, .dataTaskPerformer(.notHttpResponse(response: urlResponse)))
             promise.fulfill()
         }
 
@@ -62,7 +62,7 @@ final class DataTaskClientTests: XCTestCase {
 
         let req = Request<Data>(builder: URL.statusCode(401))
         client.retrieveData(with: req) { result in
-            XCTAssertEqual(result.error as? BaseError, .performError(.httpStatus(code: 401, data: Data())))
+            XCTAssertEqual(result.error as? BaseError, .dataTaskPerformer(.httpStatus(code: 401, data: Data())))
             promise.fulfill()
         }
 

@@ -19,13 +19,13 @@ final class RequestTests: XCTestCase {
         let request = Request<Data>(
             builder: URLRequest(url: .demo),
             requestModifiers: [
-                AnyRequestModifiable { req in
+                AnyRequestModifier { req in
                     var req = req
                     req.httpMethod = "PUT"
                     return .success(req)
                 },
                 ContentType.plainText,
-                AnyRequestModifiable { req in
+                AnyRequestModifier { req in
                     var req = req
                     req.httpBody = #function.data(using: .utf8)
                     return .success(req)
@@ -42,7 +42,7 @@ final class RequestTests: XCTestCase {
     func testDataModifiers() throws {
         let request = Request<Data>(
             builder: URLRequest(url: .demo),
-            dataModifiers: [AnyDataModifiable(Base64Modifier())]
+            dataModifiers: [AnyDataModifier(Base64Modifier())]
         )
         let payload = "OK".data(using: .utf8)
 
@@ -83,7 +83,7 @@ final class RequestTests: XCTestCase {
 }
 
 private struct Base64Modifier: DataModifiable {
-    func modify(_ inputData: Data) -> Result<Data, Error> {
-        return .success(inputData.base64EncodedData())
+    func modify(_ input: Data) -> Result<Data, Error> {
+        return .success(input.base64EncodedData())
     }
 }

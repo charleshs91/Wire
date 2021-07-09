@@ -11,18 +11,12 @@ public struct Request<Output> {
     private let dataModifiers: [DataModifiable]
     private let responseConversion: (Data) -> Result<Output, Error>
 
-    private var asDataConverter: AnyResponseConvertible<Data> {
-        return AnyResponseConvertible { data in
+    private var dataModificationConverter: AnyResponseConverter<Data> {
+        return AnyResponseConverter { data in
             modify(data: data)
         }
     }
 
-    /// Creates a `Request` object.
-    /// - Parameters:
-    ///   - builder: A `URLRequest` generating object.
-    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
-    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
-    ///   - conversion: A closure that provides a failable transformation of the modified data into an `Output`-typed value.
     public init(
         builder: RequestBuildable,
         requestModifiers: [RequestModifiable] = [],
@@ -35,12 +29,6 @@ public struct Request<Output> {
         self.responseConversion = conversion
     }
 
-    /// Creates a `Request` object.
-    /// - Parameters:
-    ///   - builder: A `URLRequest` generating object.
-    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
-    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
-    ///   - conversion: A throwable closure that converts the modified data into an `Output`-typed value.
     public init(
         builder: RequestBuildable,
         requestModifiers: [RequestModifiable] = [],
@@ -48,56 +36,53 @@ public struct Request<Output> {
         conversion: @escaping (Data) throws -> Output
     ) {
         self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in
-            return .init(catching: {
-                return try conversion(data)
+            Result(catching: {
+                try conversion(data)
             })
         })
     }
 
-    /// Creates a `Request` object.
-    /// - Parameters:
-    ///   - builder: A `URLRequest` generating object.
-    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
-    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
-    ///   - responseConverter: A object that converts the modified data into an `Output`.
-    public init<T: ResponseConvertible>(
+    public init<T>(
         builder: RequestBuildable,
         requestModifiers: [RequestModifiable] = [],
         dataModifiers: [DataModifiable] = [],
         responseConverter: T
-    ) where T.Output == Output {
+    )
+    where T: ResponseConvertible, T.Output == Output {
         self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers) { data in
-            return responseConverter.convert(data: data)
+            responseConverter.convert(data: data)
         }
     }
 
-    /// Creates a `Request` object that does not perform conversion on the processed data.
-    /// - Parameters:
-    ///   - builder: The `URLRequest` generating object.
-    ///   - requestModifiers: A collection of objects that modify the `URLRequest`.
-    ///   - dataModifiers: A collection of objects that modify the `Data` from the retrieved response.
     public init(
         builder: RequestBuildable,
         requestModifiers: [RequestModifiable] = [],
         dataModifiers: [DataModifiable] = []
-    ) where Output == Data {
+    )
+    where Output == Data {
         self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in data })
     }
 
     /// Applies modification on the data with each element of the `dataModifiers`.
     func modify(data: Data) -> Result<Data, Error> {
-        var buffer = data
+        let modifiers = dataModifiers.map {
+            Modifier<Data>(modify: $0.modify)
+        }
+        return iterateFailableModifiers(initial: data, modifiers)
+    }
 
-        for modifier in dataModifiers {
+    private struct Modifier<T> {
+        let modify: (T) -> Result<T, Error>
+    }
+
+    private func iterateFailableModifiers<T>(initial: T, _ modifiers: [Modifier<T>]) -> Result<T, Error> {
+        var buffer = initial
+        for modifier in modifiers {
             switch modifier.modify(buffer) {
-            case .failure(let error):
-                // Early return
-                return .failure(error)
-            case .success(let data):
-                buffer = data
+            case .failure(let error): return .failure(error)
+            case .success(let value): buffer = value
             }
         }
-        // Return the original data if `responseModifiers` is empty.
         return .success(buffer)
     }
 }
@@ -105,23 +90,11 @@ public struct Request<Output> {
 // MARK: - Protocol: RequestBuildable
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
-        switch builder.buildRequest() {
-        case .failure(let error):
-            return .failure(error)
-        case .success(let request):
-            var buffer = request
-
-            for modifier in requestModifiers {
-                switch modifier.modify(buffer) {
-                case .failure(let error):
-                    // Early return
-                    return .failure(error)
-                case .success(let req):
-                    buffer = req
-                }
+        return builder.buildRequest().flatMap { request in
+            let modifiers = requestModifiers.map {
+                Modifier<URLRequest>(modify: $0.modify)
             }
-            // Return the original URLRequest if `requestModifiers` is empty.
-            return .success(buffer)
+            return iterateFailableModifiers(initial: request, modifiers)
         }
     }
 }
@@ -129,12 +102,7 @@ extension Request: RequestBuildable {
 // MARK: - Protocol: ResponseConvertible
 extension Request: ResponseConvertible {
     public func convert(data: Data) -> Result<Output, Error> {
-        switch modify(data: data) {
-        case .failure(let error):
-            return .failure(error)
-        case .success(let data):
-            return responseConversion(data)
-        }
+        return modify(data: data).flatMap(responseConversion)
     }
 }
 
@@ -144,7 +112,7 @@ extension Request {
         using client: DataTaskClient = .shared,
         completion: @escaping (Result<Data, BaseError>) -> Void
     ) {
-        client.retrieveObject(with: self, responseConverter: asDataConverter, completion: completion)
+        client.retrieveObject(with: self, responseConverter: dataModificationConverter, completion: completion)
     }
 
     public func retrieveObject(
@@ -159,7 +127,7 @@ extension Request {
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
     public func dataPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
-        return client.objectPublisher(with: self, responseConverter: asDataConverter)
+        return client.objectPublisher(with: self, responseConverter: dataModificationConverter)
     }
 
     public func objectPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Output, BaseError> {

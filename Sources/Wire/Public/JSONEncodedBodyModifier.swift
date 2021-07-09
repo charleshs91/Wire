@@ -10,7 +10,7 @@ public struct JSONEncodedBodyModifier: RequestModifiable {
     }
 
     public func modify(_ request: URLRequest) -> Result<URLRequest, Error> {
-        return .init(catching: {
+        return Result(catching: {
             var req = request
             ContentType.json.apply(to: &req)
             req.httpBody = try encode()

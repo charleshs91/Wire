@@ -6,23 +6,23 @@ public enum BaseError: LocalizedError {
     case invalidURLString(String)
 
     /// Error from `RequestBuildable.buildRequest()`. The `error` is ignored upon evaluating equality.
-    case buildRequestError(Error)
+    case requestBuilder(Error)
 
     /// Error related to URLSession. The associated ``DataTaskClient/PerformError`` value is considered upon equality evaluation.
-    case performError(DataTaskClient.PerformError)
+    case dataTaskPerformer(DataTaskClient.PerformError)
 
     /// Error from `ResponseConvertible.convert(data:)`. The `error` is ignored upon evaluating equality.
-    case convertResponseError(Error)
+    case responseConverter(Error)
 
     public var errorDescription: String? {
         switch self {
         case .invalidURLString(let urlString):
             return "`\(urlString)` is not a valid URL."
-        case .buildRequestError(let error):
+        case .requestBuilder(let error):
             return "Request builder error: \(error.localizedDescription)"
-        case .performError(let requestError):
+        case .dataTaskPerformer(let requestError):
             return requestError.localizedDescription
-        case .convertResponseError(let error):
+        case .responseConverter(let error):
             return "Response converter error: \(error.localizedDescription)"
         }
     }
@@ -33,10 +33,10 @@ extension BaseError: Equatable {
         switch (lhs, rhs) {
         case (.invalidURLString(let ls), .invalidURLString(let rs)):
             return ls == rs
-        case (.performError(let le), .performError(let re)):
+        case (.dataTaskPerformer(let le), .dataTaskPerformer(let re)):
             return le == re
-        case (.buildRequestError, .buildRequestError),
-             (.convertResponseError, .convertResponseError):
+        case (.requestBuilder, .requestBuilder),
+             (.responseConverter, .responseConverter):
             return true
         default:
             return false

@@ -8,9 +8,13 @@ public enum ContentType: RequestHeader {
     case plainText
     case customized(String)
 
-    public var mergesField: Bool { false }
+    public var mergesField: Bool {
+        return false
+    }
 
-    public var key: String { "Content-Type" }
+    public var key: String {
+        return "Content-Type"
+    }
 
     /// The value for the `Content-Type` field in a header.
     public var value: String {

@@ -57,15 +57,6 @@ extension String {
     }
 }
 
-extension Result {
-    var error: Error? {
-        switch self {
-        case .failure(let error): return error
-        default: return nil
-        }
-    }
-}
-
 enum TestError: Error {
     case failure
 }

@@ -4,6 +4,6 @@ import Foundation
 /// outputs a failable result enclosing the modified data.
 public protocol DataModifiable {
     /// Modifies a chunk of data and returns a failable result wrapping the modified data on success.
-    /// - Parameter inputData: A chunk of data being modified.
-    func modify(_ inputData: Data) -> Result<Data, Error>
+    /// - Parameter input: A chunk of data being modified.
+    func modify(_ input: Data) -> Result<Data, Error>
 }
