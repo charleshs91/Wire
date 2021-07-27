@@ -3,7 +3,6 @@ import Foundation
 
 @available(iOS 15.0, tvOS 15.0, watchOS 8.0, OSX 12.0, *)
 extension DataTaskClient {
-
     public func object<T, U>(with builder: T, objectConverter: U) async throws -> U.Output
     where T: RequestBuildable, U: ResponseConvertible {
         let data = try await self.data(with: builder)

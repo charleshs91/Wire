@@ -26,7 +26,7 @@ final class RequestBuildableTests: XCTestCase {
             let req = urlString.buildRequest()
 
             XCTAssertThrowsError(try req.get(), "") { error in
-                XCTAssertTrue(error as? BaseError == .invalidURLString(urlString))
+                XCTAssertTrue(error as? WireBaseError == .invalidURLString(urlString))
             }
         }
     }

@@ -23,8 +23,8 @@ extension DataTaskClient {
                 return "Not HTTP: \(response)."
             case .httpStatus(let code, let data):
                 return """
-                "HTTP response status code: \(code), with data:\"
-                "\(data.mapNil(as: Data()).utf8String(or: "* Content Not UTF-8 *"))\"
+                HTTP response status code: \(code), with data:
+                \(data.mapNil(as: Data()).utf8String(or: "* Content Not UTF-8 *"))
                 """
             case .noData:
                 return "Server did not provide data."
@@ -36,12 +36,12 @@ extension DataTaskClient {
 extension DataTaskClient.PerformError: Equatable {
     public static func ==(lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-        case (.httpStatus(let lc, let ld), .httpStatus(let rc, let rd)):
-            return lc == rc && ld == rd
+        case (.httpStatus(let codeLeft, let dataLeft), .httpStatus(let codeRight, let dataRight)):
+            return codeLeft == codeRight && dataLeft == dataRight
         case (.sessionError, .sessionError),
-            (.noResponse, .noResponse),
-            (.notHttpResponse, .notHttpResponse),
-            (.noData, .noData):
+             (.noResponse, .noResponse),
+             (.notHttpResponse, .notHttpResponse),
+             (.noData, .noData):
             return true
         default:
             return false

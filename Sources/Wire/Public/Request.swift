@@ -35,11 +35,9 @@ public struct Request<Output> {
         dataModifiers: [DataModifiable] = [],
         conversion: @escaping (Data) throws -> Output
     ) {
-        self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in
-            Result(catching: {
-                try conversion(data)
-            })
-        })
+        self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers) { data in
+            return Result { try conversion(data) }
+        }
     }
 
     public init<T>(
@@ -50,7 +48,7 @@ public struct Request<Output> {
     )
     where T: ResponseConvertible, T.Output == Output {
         self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers) { data in
-            responseConverter.convert(data: data)
+            return responseConverter.convert(data: data)
         }
     }
 
@@ -60,25 +58,27 @@ public struct Request<Output> {
         dataModifiers: [DataModifiable] = []
     )
     where Output == Data {
-        self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers, conversion: { data in data })
+        self.init(builder: builder, requestModifiers: requestModifiers, dataModifiers: dataModifiers) { data in
+            return data
+        }
     }
 
     /// Applies modification on the data with each element of the `dataModifiers`.
     func modify(data: Data) -> Result<Data, Error> {
         let modifiers = dataModifiers.map {
-            Modifier<Data>(modify: $0.modify)
+            Modifier<Data>(closure: $0.modify)
         }
         return iterateFailableModifiers(initial: data, modifiers)
     }
 
     private struct Modifier<T> {
-        let modify: (T) -> Result<T, Error>
+        let closure: (T) -> Result<T, Error>
     }
 
     private func iterateFailableModifiers<T>(initial: T, _ modifiers: [Modifier<T>]) -> Result<T, Error> {
         var buffer = initial
         for modifier in modifiers {
-            switch modifier.modify(buffer) {
+            switch modifier.closure(buffer) {
             case .failure(let error): return .failure(error)
             case .success(let value): buffer = value
             }
@@ -87,55 +87,50 @@ public struct Request<Output> {
     }
 }
 
-// MARK: - Protocol: RequestBuildable
 extension Request: RequestBuildable {
     public func buildRequest() -> Result<URLRequest, Error> {
+        let requestModifiers = requestModifiers.map {
+            Modifier<URLRequest>(closure: $0.modify)
+        }
         return builder.buildRequest().flatMap { request in
-            let modifiers = requestModifiers.map {
-                Modifier<URLRequest>(modify: $0.modify)
-            }
-            return iterateFailableModifiers(initial: request, modifiers)
+            iterateFailableModifiers(initial: request, requestModifiers)
         }
     }
 }
 
-// MARK: - Protocol: ResponseConvertible
 extension Request: ResponseConvertible {
     public func convert(data: Data) -> Result<Output, Error> {
         return modify(data: data).flatMap(responseConversion)
     }
 }
 
-// MARK: - Methods with Closure
 extension Request {
     public func retrieveData(
         using client: DataTaskClient = .shared,
-        completion: @escaping (Result<Data, BaseError>) -> Void
+        completion: @escaping (Result<Data, WireBaseError>) -> Void
     ) {
         client.retrieveObject(with: self, responseConverter: dataModificationConverter, completion: completion)
     }
 
     public func retrieveObject(
         using client: DataTaskClient = .shared,
-        completion: @escaping (Result<Output, BaseError>) -> Void
+        completion: @escaping (Result<Output, WireBaseError>) -> Void
     ) {
         client.retrieveObject(with: self, responseConverter: self, completion: completion)
     }
 }
 
-// MARK: - Combine Supports
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
-    public func dataPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Data, BaseError> {
+    public func dataPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Data, WireBaseError> {
         return client.objectPublisher(with: self, responseConverter: dataModificationConverter)
     }
 
-    public func objectPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Output, BaseError> {
+    public func objectPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Output, WireBaseError> {
         return client.objectPublisher(with: self, responseConverter: self)
     }
 }
 
-// MARK: - Concurrency Supports
 #if swift(>=5.5)
 @available(iOS 15.0, tvOS 15.0, watchOS 8.0, OSX 12.0, *)
 extension Request {

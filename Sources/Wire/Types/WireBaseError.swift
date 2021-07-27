@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BaseError: LocalizedError {
+public enum WireBaseError: LocalizedError {
     /// The URL string is invalid. The associated value represents the URL string,
     /// which is compared upon evaluating equality.
     case invalidURLString(String)
@@ -28,8 +28,8 @@ public enum BaseError: LocalizedError {
     }
 }
 
-extension BaseError: Equatable {
-    public static func ==(lhs: BaseError, rhs: BaseError) -> Bool {
+extension WireBaseError: Equatable {
+    public static func ==(lhs: WireBaseError, rhs: WireBaseError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidURLString(let ls), .invalidURLString(let rs)):
             return ls == rs
@@ -41,5 +41,39 @@ extension BaseError: Equatable {
         default:
             return false
         }
+    }
+}
+
+public extension Error {
+    var wireBaseError: WireBaseError? {
+        return self as? WireBaseError
+    }
+
+    var wirePerformError: DataTaskClient.PerformError? {
+        guard let wireError = wireBaseError,
+              case .dataTaskPerformer(let error) = wireError
+        else { return nil }
+
+        return error
+    }
+
+    var wireBuilderOrConverterError: Error? {
+        return wireRequestBuilderError ?? wireResponseConverterError
+    }
+
+    var wireRequestBuilderError: Error? {
+        guard let wireError = wireBaseError,
+              case .requestBuilder(let error) = wireError
+        else { return nil }
+
+        return error
+    }
+
+    var wireResponseConverterError: Error? {
+        guard let wireError = wireBaseError,
+              case .responseConverter(let error) = wireError
+        else { return nil }
+
+        return error
     }
 }
