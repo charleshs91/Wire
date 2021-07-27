@@ -1,7 +1,6 @@
 import Foundation
 
-/// Concrete implementation of `DataModifiable`.
-public struct AnyDataModifiable: DataModifiable {
+public struct AnyDataModifier: DataModifiable {
     public typealias Transform = (Data) -> Result<Data, Error>
 
     private let transform: Transform
@@ -11,12 +10,12 @@ public struct AnyDataModifiable: DataModifiable {
     }
 
     public init<T: DataModifiable>(_ modifier: T) {
-        self.transform = { inputData in
-            return modifier.modify(inputData)
+        self.transform = { input in
+            modifier.modify(input)
         }
     }
 
-    public func modify(_ inputData: Data) -> Result<Data, Error> {
-        return transform(inputData)
+    public func modify(_ input: Data) -> Result<Data, Error> {
+        return transform(input)
     }
 }

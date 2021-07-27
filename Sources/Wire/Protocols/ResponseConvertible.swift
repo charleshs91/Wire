@@ -1,7 +1,9 @@
 import Foundation
 
-/// Defines the `convert(data:)` method that takes a chunk of data as an input and
-/// outputs a failable result wrapping the transformed value of type `Output`.
+/**
+ Defines the `convert(data:)` method that consumes a chunk of data and
+ outputs a failable result wrapping the transformed value of type `Output`.
+ */
 public protocol ResponseConvertible {
     /// The type which the input data is transformed to.
     associatedtype Output

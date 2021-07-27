@@ -1,7 +1,6 @@
 import Foundation
 
-/// Concrete implementation of `RequestModifiable`.
-public struct AnyRequestModifiable: RequestModifiable {
+public struct AnyRequestModifier: RequestModifiable {
     public typealias Transform = (URLRequest) -> Result<URLRequest, Error>
 
     private let transform: Transform
@@ -11,8 +10,8 @@ public struct AnyRequestModifiable: RequestModifiable {
     }
 
     public init<T: RequestModifiable>(_ modifier: T) {
-        self.transform = { urlRequest in
-            return modifier.modify(urlRequest)
+        self.transform = { req in
+            modifier.modify(req)
         }
     }
 

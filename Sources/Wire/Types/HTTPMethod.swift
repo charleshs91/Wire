@@ -10,13 +10,13 @@ public struct HTTPMethod: RequestMethod {
 }
 
 extension HTTPMethod {
-    public static let get: HTTPMethod = .init(value: "GET")
-    public static let head: HTTPMethod = .init(value: "HEAD")
-    public static let post: HTTPMethod = .init(value: "POST")
-    public static let put: HTTPMethod = .init(value: "PUT")
-    public static let delete: HTTPMethod = .init(value: "DELETE")
-    public static let connect: HTTPMethod = .init(value: "CONNECT")
-    public static let options: HTTPMethod = .init(value: "OPTIONS")
-    public static let trace: HTTPMethod = .init(value: "TRACE")
-    public static let patch: HTTPMethod = .init(value: "PATCH")
+    public static let get = HTTPMethod(value: "GET")
+    public static let head = HTTPMethod(value: "HEAD")
+    public static let post = HTTPMethod(value: "POST")
+    public static let put = HTTPMethod(value: "PUT")
+    public static let delete = HTTPMethod(value: "DELETE")
+    public static let connect = HTTPMethod(value: "CONNECT")
+    public static let options = HTTPMethod(value: "OPTIONS")
+    public static let trace = HTTPMethod(value: "TRACE")
+    public static let patch = HTTPMethod(value: "PATCH")
 }

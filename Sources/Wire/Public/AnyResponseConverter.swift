@@ -1,7 +1,6 @@
 import Foundation
 
-/// Concrete implementation of `ResponseConvertible`.
-public struct AnyResponseConvertible<Output>: ResponseConvertible {
+public struct AnyResponseConverter<Output>: ResponseConvertible {
     public typealias Transform = (Data) -> Result<Output, Error>
 
     private let transform: Transform
@@ -12,7 +11,7 @@ public struct AnyResponseConvertible<Output>: ResponseConvertible {
 
     public init<T: ResponseConvertible>(_ converter: T) where T.Output == Output {
         self.transform = { data in
-            return converter.convert(data: data)
+            converter.convert(data: data)
         }
     }
 

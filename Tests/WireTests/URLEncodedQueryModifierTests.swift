@@ -3,7 +3,7 @@ import XCTest
 
 final class URLEncodedQueryModifierTests: XCTestCase {
     func test_queryToURLPath() throws {
-        let modifier = URLEncodedQueryModifier(parameters: ["say": "台灣難波萬"], destination: .queryString)
+        let modifier = URLEncodedQueryModifier(parameters: ["say": "台灣難波萬"], destination: .url)
 
         let origReq = URLRequest(url: URL(string: "http://www.example.com/api")!)
         let newReq = try modifier.modify(origReq).get()
