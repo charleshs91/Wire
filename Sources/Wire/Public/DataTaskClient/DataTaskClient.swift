@@ -2,7 +2,7 @@ import Foundation
 
 public final class DataTaskClient {
 
-    public typealias Completion<T> = (Result<T, WireBaseError>) -> Void
+    public typealias Completion<T> = (Result<T, WireError>) -> Void
 
     public static let shared: DataTaskClient = DataTaskClient(session: .shared)
 
@@ -62,29 +62,29 @@ public final class DataTaskClient {
         }
     }
 
-    func mappingTaskResponse(data: Data?, response: URLResponse?, error: Error?) -> Result<Data, WireBaseError> {
+    func mappingTaskResponse(data: Data?, response: URLResponse?, error: Swift.Error?) -> Result<Data, WireError> {
         if let error = error {
-            return .failure(WireBaseError.dataTaskPerformer(.sessionError(error)))
+            return .failure(.dataTaskClient(.sessionError(error)))
         }
         guard let response = response else {
-            return .failure(WireBaseError.dataTaskPerformer(.noResponse))
+            return .failure(.dataTaskClient(.noResponse))
         }
         guard let httpResponse = response as? HTTPURLResponse else {
-            return .failure(WireBaseError.dataTaskPerformer(.notHttpResponse(response: response)))
+            return .failure(.dataTaskClient(.notHttpResponse(response: response)))
         }
         guard httpResponse.statusCode == 200 else {
-            return .failure(WireBaseError.dataTaskPerformer(.httpStatus(code: httpResponse.statusCode, data: data)))
+            return .failure(.dataTaskClient(.httpStatus(code: httpResponse.statusCode, data: data)))
         }
         guard let data = data else {
-            return .failure(WireBaseError.dataTaskPerformer(.noData))
+            return .failure(.dataTaskClient(.noData))
         }
 
         return .success(data)
     }
 
-    func getResultOfResponseConversion<T: ResponseConvertible>(_ responseConverter: T, data: Data) -> Result<T.Output, WireBaseError> {
+    func getResultOfResponseConversion<T: ResponseConvertible>(_ responseConverter: T, data: Data) -> Result<T.Output, WireError> {
         return responseConverter.convert(data: data).mapError {
-            WireBaseError.responseConverter($0)
+            .responseConverter($0)
         }
     }
 

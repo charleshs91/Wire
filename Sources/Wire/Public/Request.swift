@@ -68,14 +68,14 @@ public struct Request<Output> {
         let modifiers = dataModifiers.map {
             Modifier<Data>(closure: $0.modify)
         }
-        return iterateFailableModifiers(initial: data, modifiers)
+        return iterateFallibleModifiers(initial: data, modifiers)
     }
 
     private struct Modifier<T> {
         let closure: (T) -> Result<T, Error>
     }
 
-    private func iterateFailableModifiers<T>(initial: T, _ modifiers: [Modifier<T>]) -> Result<T, Error> {
+    private func iterateFallibleModifiers<T>(initial: T, _ modifiers: [Modifier<T>]) -> Result<T, Error> {
         var buffer = initial
         for modifier in modifiers {
             switch modifier.closure(buffer) {
@@ -93,7 +93,7 @@ extension Request: RequestBuildable {
             Modifier<URLRequest>(closure: $0.modify)
         }
         return builder.buildRequest().flatMap { request in
-            iterateFailableModifiers(initial: request, requestModifiers)
+            iterateFallibleModifiers(initial: request, requestModifiers)
         }
     }
 }
@@ -107,14 +107,14 @@ extension Request: ResponseConvertible {
 extension Request {
     public func retrieveData(
         using client: DataTaskClient = .shared,
-        completion: @escaping (Result<Data, WireBaseError>) -> Void
+        completion: @escaping (Result<Data, WireError>) -> Void
     ) {
         client.retrieveObject(with: self, responseConverter: dataModificationConverter, completion: completion)
     }
 
     public func retrieveObject(
         using client: DataTaskClient = .shared,
-        completion: @escaping (Result<Output, WireBaseError>) -> Void
+        completion: @escaping (Result<Output, WireError>) -> Void
     ) {
         client.retrieveObject(with: self, responseConverter: self, completion: completion)
     }
@@ -122,11 +122,11 @@ extension Request {
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, OSX 10.15, *)
 extension Request {
-    public func dataPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Data, WireBaseError> {
+    public func dataPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Data, WireError> {
         return client.objectPublisher(with: self, responseConverter: dataModificationConverter)
     }
 
-    public func objectPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Output, WireBaseError> {
+    public func objectPublisher(using client: DataTaskClient = .shared) -> AnyPublisher<Output, WireError> {
         return client.objectPublisher(with: self, responseConverter: self)
     }
 }
