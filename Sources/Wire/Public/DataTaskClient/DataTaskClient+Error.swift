@@ -22,9 +22,10 @@ extension DataTaskClient {
             case .notHttpResponse(let response):
                 return "Not HTTP: \(response)."
             case .httpStatus(let code, let data):
+                let content = data.unboxed().utf8String(or: "* Content Not UTF-8 *")
                 return """
                 HTTP response status code: \(code), with data:
-                \(data.mapNil(as: Data()).utf8String(or: "* Content Not UTF-8 *"))
+                \(content)
                 """
             case .noData:
                 return "Server did not provide data."
