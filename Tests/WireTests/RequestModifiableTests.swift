@@ -8,12 +8,12 @@ final class RequestModifiableTests: XCTestCase {
             req.httpMethod = HTTPMethod.post.method
             return .success(req)
         }
-        let origReq = URLRequest(url: .demo)
-        let newReq = try requestModifier.modify(origReq).get()
+        let request = URLRequest(url: .demo)
+        let modifiedRequest = try requestModifier.modify(request).get()
 
-        XCTAssertEqual(origReq.url, newReq.url)
-        XCTAssertEqual(origReq.httpMethod, "GET")
-        XCTAssertEqual(newReq.httpMethod, "POST")
+        XCTAssertEqual(request.url, modifiedRequest.url)
+        XCTAssertEqual(request.httpMethod, "GET")
+        XCTAssertEqual(modifiedRequest.httpMethod, "POST")
     }
 
     func testFailure() {

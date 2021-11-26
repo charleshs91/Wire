@@ -19,11 +19,7 @@ final class RequestTests: XCTestCase {
         let request = Request<Data>(
             builder: URLRequest(url: .demo),
             requestModifiers: [
-                AnyRequestModifier { req in
-                    var req = req
-                    req.httpMethod = "PUT"
-                    return .success(req)
-                },
+                HTTPMethod.put,
                 ContentType.plainText,
                 AnyRequestModifier { req in
                     var req = req
