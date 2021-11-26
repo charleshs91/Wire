@@ -3,7 +3,7 @@ import XCTest
 
 final class ResponseConvertibleTests: XCTestCase {
     func testInit() throws {
-        let converter = AnyResponseConvertible<String> { data in
+        let converter = AnyResponseConverter<String> { data in
             let aString = String(data: data, encoding: .utf8) ?? ""
             return .success(aString)
         }
@@ -14,7 +14,7 @@ final class ResponseConvertibleTests: XCTestCase {
     }
 
     func testSuccess() throws {
-        let converter = AnyResponseConvertible(StringIntConverter())
+        let converter = AnyResponseConverter(StringIntConverter())
         let payload = "100".data(using: .utf8) ?? Data()
         let number = try converter.convert(data: payload).get()
 
@@ -22,7 +22,7 @@ final class ResponseConvertibleTests: XCTestCase {
     }
 
     func testFailure() {
-        let converter = AnyResponseConvertible(StringIntConverter())
+        let converter = AnyResponseConverter(StringIntConverter())
         let payload = #function.data(using: .utf8) ?? Data()
 
         XCTAssertThrowsError(try converter.convert(data: payload).get(), "") { error in

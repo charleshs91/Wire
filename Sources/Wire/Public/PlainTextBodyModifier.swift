@@ -17,7 +17,7 @@ public struct PlainTextBodyModifier: RequestModifiable {
     }
 
     public func modify(_ request: URLRequest) -> Result<URLRequest, Swift.Error> {
-        return .init(catching: {
+        return Result(catching: {
             var req = request
             ContentType.plainText.apply(to: &req)
             req.httpBody = try encode()
