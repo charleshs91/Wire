@@ -8,10 +8,6 @@ public enum ContentType: RequestHeader {
     case plainText
     case customized(String)
 
-    public var mergesField: Bool {
-        return false
-    }
-
     public var key: String {
         return "Content-Type"
     }
@@ -30,5 +26,9 @@ public enum ContentType: RequestHeader {
         case .customized(let value):
             return value
         }
+    }
+
+    public var mergesField: Bool {
+        return false
     }
 }

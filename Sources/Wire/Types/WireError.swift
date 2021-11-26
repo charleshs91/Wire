@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WireBaseError: LocalizedError {
+public enum WireError: LocalizedError {
     /// The URL string is invalid. The associated value represents the URL string,
     /// which is compared upon evaluating equality.
     case invalidURLString(String)
@@ -9,7 +9,7 @@ public enum WireBaseError: LocalizedError {
     case requestBuilder(Error)
 
     /// Error related to URLSession. The associated ``DataTaskClient/PerformError`` value is considered upon equality evaluation.
-    case dataTaskPerformer(DataTaskClient.PerformError)
+    case dataTaskClient(DataTaskClient.Error)
 
     /// Error from `ResponseConvertible.convert(data:)`. The `error` is ignored upon evaluating equality.
     case responseConverter(Error)
@@ -20,7 +20,7 @@ public enum WireBaseError: LocalizedError {
             return "`\(urlString)` is not a valid URL."
         case .requestBuilder(let error):
             return "Request builder error: \(error.localizedDescription)"
-        case .dataTaskPerformer(let requestError):
+        case .dataTaskClient(let requestError):
             return requestError.localizedDescription
         case .responseConverter(let error):
             return "Response converter error: \(error.localizedDescription)"
@@ -28,12 +28,12 @@ public enum WireBaseError: LocalizedError {
     }
 }
 
-extension WireBaseError: Equatable {
-    public static func ==(lhs: WireBaseError, rhs: WireBaseError) -> Bool {
+extension WireError: Equatable {
+    public static func ==(lhs: WireError, rhs: WireError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidURLString(let ls), .invalidURLString(let rs)):
             return ls == rs
-        case (.dataTaskPerformer(let le), .dataTaskPerformer(let re)):
+        case (.dataTaskClient(let le), .dataTaskClient(let re)):
             return le == re
         case (.requestBuilder, .requestBuilder),
              (.responseConverter, .responseConverter):
@@ -45,35 +45,31 @@ extension WireBaseError: Equatable {
 }
 
 public extension Error {
-    var wireBaseError: WireBaseError? {
-        return self as? WireBaseError
+    var wireError: WireError? {
+        return self as? WireError
     }
 
-    var wirePerformError: DataTaskClient.PerformError? {
-        guard let wireError = wireBaseError,
-              case .dataTaskPerformer(let error) = wireError
+    var wireDataTaskClientError: DataTaskClient.Error? {
+        guard let wireError = wireError,
+              case .dataTaskClient(let error) = wireError 
         else { return nil }
 
         return error
-    }
-
-    var wireBuilderOrConverterError: Error? {
-        return wireRequestBuilderError ?? wireResponseConverterError
     }
 
     var wireRequestBuilderError: Error? {
-        guard let wireError = wireBaseError,
-              case .requestBuilder(let error) = wireError
+        guard let wireError = wireError,
+              case .requestBuilder(let builderError) = wireError
         else { return nil }
 
-        return error
+        return builderError
     }
 
     var wireResponseConverterError: Error? {
-        guard let wireError = wireBaseError,
-              case .responseConverter(let error) = wireError
+        guard let wireError = wireError,
+              case .responseConverter(let converterError) = wireError
         else { return nil }
 
-        return error
+        return converterError
     }
 }

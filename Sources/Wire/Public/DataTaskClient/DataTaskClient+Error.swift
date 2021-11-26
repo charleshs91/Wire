@@ -1,9 +1,9 @@
 import Foundation
 
 extension DataTaskClient {
-    public enum PerformError: LocalizedError {
+    public indirect enum Error: LocalizedError {
         /// `URLError` from `URLSession`. The `error` is ignored upon evaluating equality.
-        case sessionError(_ error: Error)
+        case sessionError(_ error: Swift.Error)
         /// No response from server
         case noResponse
         /// The response is not HTTP. The `response` is ignored upon evaluating equality.
@@ -22,9 +22,10 @@ extension DataTaskClient {
             case .notHttpResponse(let response):
                 return "Not HTTP: \(response)."
             case .httpStatus(let code, let data):
+                let content = data.unboxed().utf8String(or: "* Content Not UTF-8 *")
                 return """
                 HTTP response status code: \(code), with data:
-                \(data.mapNil(as: Data()).utf8String(or: "* Content Not UTF-8 *"))
+                \(content)
                 """
             case .noData:
                 return "Server did not provide data."
@@ -33,7 +34,7 @@ extension DataTaskClient {
     }
 }
 
-extension DataTaskClient.PerformError: Equatable {
+extension DataTaskClient.Error: Equatable {
     public static func ==(lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.httpStatus(let codeLeft, let dataLeft), .httpStatus(let codeRight, let dataRight)):
